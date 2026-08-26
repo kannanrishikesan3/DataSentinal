@@ -33,7 +33,7 @@ try {
     Pop-Location
 }
 
-Write-Host "==> Freezing Windows Service binary (datasentinel-agent-service.exe)..."
+Write-Host "==> Freezing Windows Service onedir (build\datasentinel-agent-service\)..."
 Push-Location $AgentDir
 try {
     pyinstaller datasentinel-agent-service.spec --clean --distpath "$OutDir" --workpath "$OutDir\pyinstaller-work"
@@ -45,7 +45,7 @@ try {
 Write-Host "==> Compiling the MSI with WiX..."
 Push-Location $PSScriptRoot
 try {
-    wix build Product.wxs -arch x64 -ext WixToolset.Util.wixext -out DataSentinel-Agent-Setup-x64.msi
+    wix build Product.wxs -arch x64 -ext WixToolset.Util.wixext -ext WixToolset.UI.wixext -out DataSentinel-Agent-Setup-x64.msi
     if ($LASTEXITCODE -ne 0) { throw "wix build failed" }
 } finally {
     Pop-Location
