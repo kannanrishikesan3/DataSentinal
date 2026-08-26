@@ -8,7 +8,7 @@ interface CreateEnrollmentTokenInput {
   name: string
   expires_in_days: number
   max_uses: number
-  allowed_os?: 'windows' | 'linux'
+  allowed_os?: 'windows' | 'linux' | 'macos'
   policy_id?: string
 }
 

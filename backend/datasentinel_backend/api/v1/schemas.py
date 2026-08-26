@@ -40,7 +40,7 @@ class CurrentUserResponse(BaseModel):
 class EndpointRegisterRequest(BaseModel):
     name: str
     hostname: str
-    os: str = Field(pattern="^(windows|linux)$")
+    os: str = Field(pattern="^(windows|linux|macos)$")
     os_version: str | None = None
     agent_version: str | None = None
 
@@ -82,7 +82,7 @@ class EnrollmentTokenCreateRequest(BaseModel):
     name: str
     expires_in_days: int = Field(gt=0, le=365, default=7)
     max_uses: int = Field(gt=0, le=100_000, default=1)
-    allowed_os: str | None = Field(default=None, pattern="^(windows|linux)$")
+    allowed_os: str | None = Field(default=None, pattern="^(windows|linux|macos)$")
     # If set, every endpoint that enrolls with this token gets this policy
     # auto-assigned (Endpoint.policy_id) instead of falling back to every
     # org policy.
@@ -118,7 +118,7 @@ class EndpointEnrollRequest(BaseModel):
     enrollment_token: str
     name: str
     hostname: str
-    os: str = Field(pattern="^(windows|linux)$")
+    os: str = Field(pattern="^(windows|linux|macos)$")
     os_version: str | None = None
     agent_version: str | None = None
 

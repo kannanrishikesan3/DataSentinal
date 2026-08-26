@@ -30,7 +30,7 @@ export function CreateEnrollmentTokenDialog() {
         name,
         expires_in_days: Number(expiresInDays),
         max_uses: Number(maxUses),
-        allowed_os: allowedOs === ANY_OS ? undefined : (allowedOs as 'windows' | 'linux'),
+        allowed_os: allowedOs === ANY_OS ? undefined : (allowedOs as 'windows' | 'linux' | 'macos'),
         policy_id: policyId === NO_POLICY ? undefined : policyId,
       },
       { onSuccess: (data) => setIssuedToken(data.raw_token) },
@@ -125,6 +125,7 @@ export function CreateEnrollmentTokenDialog() {
                     <SelectItem value={ANY_OS}>Any</SelectItem>
                     <SelectItem value="windows">Windows only</SelectItem>
                     <SelectItem value="linux">Linux only</SelectItem>
+                    <SelectItem value="macos">macOS only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

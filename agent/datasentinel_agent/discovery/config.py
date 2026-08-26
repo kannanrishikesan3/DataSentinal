@@ -7,16 +7,16 @@ the concrete parameters a scan run needs, resolving OS-specific default paths.
 from __future__ import annotations
 
 import os
-import platform
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from datasentinel_agent.config.scan_config import ScanConfig, load_scan_config
+from datasentinel_agent.core.platform import detect_platform
 
 
 def _current_os_key() -> str:
-    return "windows" if platform.system() == "Windows" else "linux"
+    return detect_platform().value
 
 
 def resolve_default_include_paths(config: ScanConfig | None = None) -> list[Path]:
