@@ -6,7 +6,7 @@ import type { EndpointRecord, EndpointRegisterResponse } from '@/types/api'
 interface RegisterEndpointInput {
   name: string
   hostname: string
-  os: 'windows' | 'linux'
+  os: 'windows' | 'linux' | 'macos'
   os_version?: string
   agent_version?: string
 }

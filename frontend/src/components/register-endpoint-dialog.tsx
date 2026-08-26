@@ -12,7 +12,7 @@ export function RegisterEndpointDialog() {
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
   const [hostname, setHostname] = React.useState('')
-  const [os, setOs] = React.useState<'windows' | 'linux'>('linux')
+  const [os, setOs] = React.useState<'windows' | 'linux' | 'macos'>('linux')
   const [issuedToken, setIssuedToken] = React.useState<string | null>(null)
   const register = useRegisterEndpoint()
 
@@ -74,13 +74,14 @@ export function RegisterEndpointDialog() {
               </div>
               <div className="space-y-1.5">
                 <Label>Operating system</Label>
-                <Select value={os} onValueChange={(value) => setOs(value as 'windows' | 'linux')}>
+                <Select value={os} onValueChange={(value) => setOs(value as 'windows' | 'linux' | 'macos')}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="linux">Linux</SelectItem>
                     <SelectItem value="windows">Windows</SelectItem>
+                    <SelectItem value="macos">macOS</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -13,6 +13,27 @@ def _register(client, auth_headers, hostname="WIN-LAPTOP-023"):
     )
 
 
+def test_register_macos_endpoint(client, auth_headers):
+    # Phase 2 (macOS support): the os field's validation pattern was
+    # extended from ^(windows|linux)$ to include macos.
+    response = client.post(
+        "/api/v1/endpoints/register",
+        headers=auth_headers,
+        json={"name": "MAC-001", "hostname": "MAC-001", "os": "macos", "os_version": "15", "agent_version": "1.0.0"},
+    )
+    assert response.status_code == 201, response.text
+    assert response.json()["endpoint"]["os"] == "macos"
+
+
+def test_register_endpoint_rejects_unknown_os(client, auth_headers):
+    response = client.post(
+        "/api/v1/endpoints/register",
+        headers=auth_headers,
+        json={"name": "X", "hostname": "X", "os": "solaris"},
+    )
+    assert response.status_code == 422
+
+
 def test_register_endpoint_returns_a_usable_api_token(client, auth_headers):
     response = _register(client, auth_headers)
     assert response.status_code == 201

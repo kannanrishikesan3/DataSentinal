@@ -115,7 +115,7 @@ def _write_env_credentials(env_file: Path, server_url: str, api_token: str) -> N
 @click.option("--token", "enrollment_token", required=True, help="Reusable enrollment token from the dashboard.")
 @click.option("--name", default=None, help="Display name for this endpoint. Defaults to this machine's hostname.")
 @click.option("--hostname", default=None, help="Defaults to this machine's real hostname.")
-@click.option("--os", "os_name", type=click.Choice(["windows", "linux"]), default=None, help="Defaults to auto-detected.")
+@click.option("--os", "os_name", type=click.Choice(["windows", "linux", "macos"]), default=None, help="Defaults to auto-detected.")
 @click.option(
     "--env-file", type=click.Path(path_type=Path), default=Path(".env"),
     help="Where to write DATASENTINEL_BACKEND_URL/DATASENTINEL_ENDPOINT_TOKEN once enrolled.",
@@ -128,14 +128,15 @@ def enroll(
     sections 7-13) — the counterpart to an admin manually registering an
     endpoint from the dashboard. The enrollment token itself is never
     written anywhere; only the resulting per-endpoint credential is."""
-    import platform
     import socket
 
     import httpx
 
+    from datasentinel_agent.core.platform import detect_platform
+
     resolved_hostname = hostname or socket.gethostname()
     resolved_name = name or resolved_hostname
-    resolved_os = os_name or ("windows" if platform.system() == "Windows" else "linux")
+    resolved_os = os_name or detect_platform().value
 
     _banner()
     click.echo(f"Enrolling '{resolved_hostname}' ({resolved_os}) with {server_url} ...\n")

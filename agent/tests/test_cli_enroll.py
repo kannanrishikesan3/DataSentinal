@@ -119,6 +119,24 @@ def test_enroll_defaults_hostname_to_the_real_machine_hostname(tmp_path, monkeyp
     assert "auto-detected-host" in result.output
 
 
+def test_enroll_auto_detects_macos_instead_of_defaulting_to_linux(tmp_path, monkeypatch):
+    # Regression test for Phase 2 (macOS support): the old binary
+    # `platform.system() == "Windows"` ternary this replaced would have
+    # silently misreported a real Mac as "linux".
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    env_file = tmp_path / ".env"
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "enroll", "--server-url", "http://backend.example.com", "--token", "dset_fake-token",
+            "--hostname", "test-mac", "--env-file", str(env_file),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "(macos)" in result.output
+
+
 def test_enroll_reports_a_clean_error_on_rejection(tmp_path, _patch_httpx_post):
     def rejected(request: httpx.Request) -> httpx.Response:
         return httpx.Response(403, json={"detail": "Enrollment token is expired"}, request=request)
