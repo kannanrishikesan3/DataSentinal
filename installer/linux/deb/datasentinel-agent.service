@@ -1,0 +1,47 @@
+[Unit]
+Description=DataSentinel Endpoint Agent — scheduled data risk discovery scans
+Documentation=https://github.com/your-org/datasentinel
+After=network-online.target
+Wants=network-online.target
+# Crash-loop protection (spec section 9/33): belongs in [Unit], not
+# [Service] — systemd silently ignores it there (confirmed via
+# `journalctl`: "Unknown key name 'StartLimitIntervalSec' in section
+# 'Service', ignoring" on a real install), so a persistently-crashing
+# service would restart unthrottled forever. Found during Linux
+# validation; not caught by any earlier test since none of them fed the
+# service a real crash loop.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Least privilege (spec section 33/35): a dedicated unprivileged service
+# account, created by the package's postinst. Root is never required to run.
+User=datasentinel
+Group=datasentinel
+
+WorkingDirectory=/opt/datasentinel-agent
+Environment=DATASENTINEL_DB_PATH=/var/lib/datasentinel-agent/datasentinel.db
+Environment=DATASENTINEL_SCHEDULES_PATH=/var/lib/datasentinel-agent/schedules.json
+Environment=DATASENTINEL_SCAN_CONFIG_PATH=/etc/datasentinel-agent/scan-config.yaml
+EnvironmentFile=-/etc/datasentinel-agent/agent.env
+ExecStart=/opt/datasentinel-agent/datasentinel schedule run
+
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+Restart=on-failure
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=datasentinel-agent
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/datasentinel-agent
+
+[Install]
+WantedBy=multi-user.target

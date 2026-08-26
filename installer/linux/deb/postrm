@@ -1,0 +1,28 @@
+#!/bin/sh
+# postrm: on purge only, remove the data directory and service account —
+# a plain `apt remove` keeps both, matching normal Debian conventions
+# (findings/schedules survive a reinstall unless the admin explicitly purges).
+set -e
+
+SERVICE_USER="datasentinel"
+DATA_DIR="/var/lib/datasentinel-agent"
+CONFIG_DIR="/etc/datasentinel-agent"
+
+case "$1" in
+    purge)
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload || true
+        fi
+        rm -rf "$DATA_DIR"
+        # dpkg already removes conffiles it manages (scan-config.yaml) on
+        # purge; agent.env is intentionally not a conffile (see postinst —
+        # it's only written if absent, to survive upgrades), so it and the
+        # now-empty directory need removing here explicitly.
+        rm -rf "$CONFIG_DIR"
+        if getent passwd "$SERVICE_USER" >/dev/null 2>&1; then
+            deluser --system "$SERVICE_USER" >/dev/null 2>&1 || true
+        fi
+        ;;
+esac
+
+exit 0

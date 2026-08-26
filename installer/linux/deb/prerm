@@ -1,0 +1,14 @@
+#!/bin/sh
+# prerm: stop and disable the service before files are removed.
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        if [ -d /run/systemd/system ]; then
+            systemctl stop datasentinel-agent.service || true
+            systemctl disable datasentinel-agent.service || true
+        fi
+        ;;
+esac
+
+exit 0

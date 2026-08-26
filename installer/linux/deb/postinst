@@ -1,0 +1,48 @@
+#!/bin/sh
+# postinst: create the service account/data dir, write a default agent.env
+# on first install only (conffiles handle upgrades), and enable+start the
+# service if systemd is actually running (it isn't in every build/CI
+# environment this package might be built or dpkg -i'd in).
+set -e
+
+SERVICE_USER="datasentinel"
+DATA_DIR="/var/lib/datasentinel-agent"
+CONFIG_DIR="/etc/datasentinel-agent"
+
+case "$1" in
+    configure)
+        if ! getent passwd "$SERVICE_USER" >/dev/null 2>&1; then
+            adduser --system --group --no-create-home --shell /usr/sbin/nologin \
+                --home "$DATA_DIR" "$SERVICE_USER"
+        fi
+
+        mkdir -p "$DATA_DIR"
+        chown "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR"
+        chmod 750 "$DATA_DIR"
+
+        if [ ! -f "$CONFIG_DIR/agent.env" ]; then
+            cat > "$CONFIG_DIR/agent.env" <<'EOF'
+# DataSentinel agent configuration — see agent/README.md for every option.
+# Leave AI/backend settings blank to run fully local/offline.
+AI_ENABLED=false
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=
+DATASENTINEL_BACKEND_URL=
+DATASENTINEL_ENDPOINT_TOKEN=
+DATASENTINEL_LOG_LEVEL=INFO
+EOF
+            chmod 640 "$CONFIG_DIR/agent.env"
+            chown "root:$SERVICE_USER" "$CONFIG_DIR/agent.env"
+        fi
+
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload || true
+            systemctl enable datasentinel-agent.service || true
+            systemctl restart datasentinel-agent.service || true
+        else
+            echo "systemd not running — service not started. Run 'systemctl enable --now datasentinel-agent' once it is available." >&2
+        fi
+        ;;
+esac
+
+exit 0

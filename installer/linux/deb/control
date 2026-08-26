@@ -1,0 +1,20 @@
+Package: datasentinel-agent
+Version: __VERSION__
+Section: admin
+Priority: optional
+Architecture: amd64
+Recommends: libmagic1
+Maintainer: DataSentinel <security@example.com>
+Homepage: https://github.com/your-org/datasentinel
+Description: DataSentinel endpoint data risk discovery agent
+ Read-only, local-first PII and secret discovery scanner for authorized
+ enterprise security teams. Discovers files, detects personally
+ identifiable information and credentials (API keys, private keys, cloud
+ credentials, ...), scores risk, and reports redacted findings to a central
+ DataSentinel backend. Never uploads whole files by default and never
+ executes anything it finds while scanning.
+ .
+ Installs a systemd service (datasentinel-agent) that runs scheduled scans;
+ see /etc/datasentinel-agent/agent.env to configure backend connectivity,
+ and /etc/datasentinel-agent/scan-config.yaml to override scan profiles,
+ include/exclude paths, and risk thresholds.

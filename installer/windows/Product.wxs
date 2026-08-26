@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DataSentinel Agent — WiX v4 installer source.
+
+  Produces DataSentinel-Agent-Setup-x64.msi (spec sections 8/20/44/61/64).
+  Build with the WiX v4 CLI (see build.ps1 in this directory):
+
+      wix build Product.wxs -arch x64 -ext WixToolset.Util.wixext -out DataSentinel-Agent-Setup-x64.msi
+
+  IMPORTANT — authored without a Windows/WiX toolchain available to compile
+  or run it (this repo was built in a Linux sandbox). Treat this as a
+  reviewed *starting point*, not a validated artifact: build it, then work
+  through installer/windows/README.md's test checklist (mirroring spec
+  section 44 — fresh install, upgrade, repair, uninstall, silent install,
+  service start/stop/restart, reboot survival) on a real Windows VM before
+  shipping it anywhere.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package name="DataSentinel Agent"
+           Manufacturer="DataSentinel"
+           Version="1.0.0.0"
+           UpgradeCode="8f2c9e6a-3b1d-4a7e-9c2f-5d6e7a8b9c01"
+           Language="1033"
+           Compressed="yes"
+           InstallerVersion="500"
+           Scope="perMachine">
+
+    <SummaryInformation Keywords="Installer" Description="DataSentinel Agent Setup" Manufacturer="DataSentinel" />
+
+    <!-- Fresh install / upgrade / repair / uninstall are native msiexec
+         behavior once MajorUpgrade + a real Package/ProductCode are
+         declared — no custom scripting needed for those four cases. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of DataSentinel Agent is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Silent-install properties (spec section 8) — two mutually exclusive
+         ways to give this machine backend credentials, pick ONE:
+
+         (a) Pre-registered, one token per device (admin does the work up
+             front, e.g. via a scripted loop over POST /api/v1/endpoints/register):
+
+               msiexec /i DataSentinel-Agent-Setup-x64.msi /quiet ^
+                 ORGANIZATION="Acme Corp" SERVERURL="https://dashboard.example.com" ^
+                 ENDPOINTTOKEN="<token from POST /api/v1/endpoints/register>"
+
+             SERVERURL/ENDPOINTTOKEN are written directly as this machine's
+             DATASENTINEL_BACKEND_URL / DATASENTINEL_ENDPOINT_TOKEN machine
+             environment variables — no install-time network call at all.
+
+         (b) Self-service enrollment, one reusable token for many devices
+             (an admin creates it once via POST /api/v1/enrollment-tokens,
+             then hands the SAME value to a fleet deployment tool):
+
+               msiexec /i DataSentinel-Agent-Setup-x64.msi /quiet ^
+                 ORGANIZATION="Acme Corp" SERVERURL="https://dashboard.example.com" ^
+                 ENROLLMENTTOKEN="<token from POST /api/v1/enrollment-tokens>"
+
+             This runs `datasentinel.exe enroll` at install time (the
+             EnrollAgent custom action below), which calls
+             POST /api/v1/endpoints/enroll itself and writes the resulting
+             *per-endpoint* credential to APPDATAFOLDER\agent.env — the
+             reusable enrollment token itself is never persisted anywhere
+             on the machine (see cli/main.py's `enroll` command). Skipped
+             entirely if ENDPOINTTOKEN is also given, so (a) always wins if
+             both are somehow set.
+
+         ORGANIZATION is a label only (shown nowhere sensitive, never
+         logged). Neither token is required — installing with neither
+         still succeeds and produces a fully functional, backend-
+         disconnected agent (local-first design; see docs/ARCHITECTURE.md).
+
+         SECURITY NOTE (untested, honest caveat — see README.md): MSI
+         verbose logging (`msiexec /l*v log.txt`) can capture the resolved
+         command line of a deferred custom action, which would include
+         ENROLLMENTTOKEN's value even with Hidden+Secure set (those
+         attributes keep it out of the *property table* dump and restricted
+         UI, not necessarily out of `/l*v` output for the action that
+         consumes it). Avoid `/l*v` for unattended installs that pass
+         either token; see README.md for the file-based alternative if your
+         environment mandates verbose logging for audit reasons. -->
+    <Property Id="ORGANIZATION" Value="" />
+    <Property Id="SERVERURL" Value="" />
+    <Property Id="ENDPOINTTOKEN" Value="" Hidden="yes" Secure="yes" />
+    <Property Id="ENROLLMENTTOKEN" Value="" Hidden="yes" Secure="yes" />
+
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Feature Id="MainFeature" Title="DataSentinel Agent" Level="1">
+      <ComponentGroupRef Id="AgentFiles" />
+      <ComponentRef Id="EnvironmentVariables" />
+      <ComponentRef Id="ServiceLifecycle" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="DataSentinel">
+        <Directory Id="CONFIGFOLDER" Name="config" />
+        <Directory Id="LOGSFOLDER" Name="logs" />
+        <Directory Id="DATAFOLDER" Name="data" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="APPDATAFOLDER" Name="DataSentinelAgent" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER">
+      <!-- The CLI/on-demand-scan binary (PyInstaller build of main.py via
+           ../../agent/datasentinel-agent.spec — output name 'datasentinel'). -->
+      <Component Id="CliExecutable" Guid="a1b2c3d4-0001-4a11-9e01-000000000001">
+        <File Id="DataSentinelExe" Source="build\datasentinel.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- The Windows Service binary (PyInstaller build of service_main.py
+           via ../../agent/datasentinel-agent-service.spec). -->
+      <Component Id="ServiceExecutable" Guid="a1b2c3d4-0002-4a11-9e01-000000000002">
+        <File Id="DataSentinelServiceExe" Source="build\datasentinel-agent-service.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="AlembicConfig" Guid="a1b2c3d4-0003-4a11-9e01-000000000003">
+        <File Id="AlembicIni" Source="..\..\agent\alembic.ini" KeyPath="yes" />
+      </Component>
+
+      <Component Id="ScanConfig" Directory="CONFIGFOLDER" Guid="a1b2c3d4-0004-4a11-9e01-000000000004">
+        <File Id="DefaultYaml" Source="..\..\agent\config\default.yaml" KeyPath="yes" />
+      </Component>
+
+      <!-- logs\ and data\ ship empty — the service creates its own files
+           there at first run; an empty directory still needs one
+           placeholder component so WiX has something to key the folder's
+           creation/removal to. -->
+      <Component Id="LogsFolderPlaceholder" Directory="LOGSFOLDER" Guid="a1b2c3d4-0005-4a11-9e01-000000000005">
+        <CreateFolder />
+      </Component>
+      <Component Id="DataFolderPlaceholder" Directory="DATAFOLDER" Guid="a1b2c3d4-0006-4a11-9e01-000000000006">
+        <CreateFolder />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Per-machine configuration, mirroring what
+         scripts/install-windows-service.ps1 already does by hand for a
+         venv-based install — the MSI does the same thing for the frozen
+         binaries. Removed automatically on uninstall (no explicit
+         RemoveEnvironment needed; WiX tracks these components). -->
+    <Component Id="EnvironmentVariables" Directory="INSTALLFOLDER" Guid="a1b2c3d4-0007-4a11-9e01-000000000007">
+      <RegistryValue Root="HKLM" Key="Software\DataSentinel\Agent" Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+      <Environment Id="EnvBackendUrl" Name="DATASENTINEL_BACKEND_URL" Value="[SERVERURL]" Permanent="no" Part="all" Action="set" System="yes" />
+      <Environment Id="EnvEndpointToken" Name="DATASENTINEL_ENDPOINT_TOKEN" Value="[ENDPOINTTOKEN]" Permanent="no" Part="all" Action="set" System="yes" />
+      <Environment Id="EnvDbPath" Name="DATASENTINEL_DB_PATH" Value="[APPDATAFOLDER]datasentinel.db" Permanent="no" Part="all" Action="set" System="yes" />
+      <Environment Id="EnvSchedulesPath" Name="DATASENTINEL_SCHEDULES_PATH" Value="[APPDATAFOLDER]schedules.json" Permanent="no" Part="all" Action="set" System="yes" />
+      <!-- Makes Settings (agent/datasentinel_agent/config/settings.py) load
+           from this absolute path regardless of the service process's
+           working directory, which the Windows SCM does not guarantee is
+           INSTALLFOLDER/APPDATAFOLDER — see settings.py's DATASENTINEL_ENV_FILE
+           for why a plain relative ".env" isn't reliable here. Harmless
+           no-op for the ENDPOINTTOKEN flow (no such file exists, and every
+           value it would have supplied is already a machine env var
+           instead); only load-bearing for the EnrollAgent/ENROLLMENTTOKEN
+           flow below, which writes exactly this file. -->
+      <Environment Id="EnvEnvFile" Name="DATASENTINEL_ENV_FILE" Value="[APPDATAFOLDER]agent.env" Permanent="no" Part="all" Action="set" System="yes" />
+    </Component>
+
+    <!-- Service install/start on install; stop/remove on uninstall. Not
+         WiX's native ServiceInstall/ServiceControl elements — those assume
+         a plain Win32 service entry point, whereas this binary is a
+         pywin32 ServiceFramework executable that already implements its
+         own install/start/stop/remove verbs (service_main.py), so driving
+         it through its own CLI is the correct integration, not a
+         workaround. -->
+    <Component Id="ServiceLifecycle" Directory="INSTALLFOLDER" Guid="a1b2c3d4-0008-4a11-9e01-000000000008">
+      <RegistryValue Root="HKLM" Key="Software\DataSentinel\Agent" Name="ServiceLifecycleMarker" Type="string" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Self-service enrollment (ENROLLMENTTOKEN flow — see the property
+         block above). Writes the resulting per-endpoint credential to
+         APPDATAFOLDER\agent.env; the reusable enrollment token itself
+         never touches disk (cli/main.py's `enroll` command only persists
+         what POST /api/v1/endpoints/enroll returns). Return="check" so a
+         rejected/invalid token fails the install loudly, matching
+         RunMigrations's own fail-hard convention, rather than silently
+         producing a backend-disconnected agent when one was explicitly
+         requested. -->
+    <CustomAction Id="EnrollAgent"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel.exe&quot; enroll --server-url &quot;[SERVERURL]&quot; --token &quot;[ENROLLMENTTOKEN]&quot; --env-file &quot;[APPDATAFOLDER]agent.env&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <CustomAction Id="RunMigrations"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel.exe&quot; config validate"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <CustomAction Id="InstallService"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; install"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <CustomAction Id="StartService"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; start"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <CustomAction Id="StopService"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; stop"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <CustomAction Id="RemoveService"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; remove"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <!-- Fresh install / upgrade: enroll (if requested) before validating
+           config, then install + start the service, after files and
+           environment variables are in place. Skipped whenever
+           ENDPOINTTOKEN is also given, so a static pre-registered token
+           always takes precedence over a reusable enrollment token. -->
+      <Custom Action="EnrollAgent" After="InstallFiles">(NOT Installed OR REINSTALL) AND ENROLLMENTTOKEN AND NOT ENDPOINTTOKEN</Custom>
+      <Custom Action="RunMigrations" After="EnrollAgent">NOT Installed OR REINSTALL</Custom>
+      <Custom Action="InstallService" After="RunMigrations">NOT Installed OR REINSTALL</Custom>
+      <Custom Action="StartService" After="InstallService">NOT Installed OR REINSTALL</Custom>
+
+      <!-- Uninstall / upgrade's removal of the old version: stop then
+           remove the service before its files are deleted. -->
+      <Custom Action="StopService" Before="RemoveFiles">REMOVE~="ALL" OR (UPGRADINGPRODUCTCODE AND NOT UPGRADINGPRODUCTCODE="")</Custom>
+      <Custom Action="RemoveService" After="StopService">REMOVE~="ALL" OR (UPGRADINGPRODUCTCODE AND NOT UPGRADINGPRODUCTCODE="")</Custom>
+    </InstallExecuteSequence>
+
+    <!-- Minimal directory-choice UI; silent installs (/quiet) skip all of
+         this and just apply the properties above. -->
+    <ui:WixUI xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui" Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+
+  </Package>
+</Wix>

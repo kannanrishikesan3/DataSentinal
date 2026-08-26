@@ -1,0 +1,128 @@
+# DataSentinel Agent — default configuration.
+# Overridden by environment variables (see agent/.env.example) and, later, by
+# administrator policy pushed from the backend (agent/datasentinel_agent/policy/).
+
+scan:
+  default_profile: standard
+
+  profiles:
+    quick:
+      max_file_size_mb: 5
+      max_depth: 3
+      worker_limit: 4
+      scan_archives: false
+    standard:
+      max_file_size_mb: 50
+      max_depth: 10
+      worker_limit: 8
+      scan_archives: false
+    deep:
+      max_file_size_mb: 500
+      max_depth: 25
+      worker_limit: 8
+      scan_archives: true
+    # Starting point for an administrator-defined custom profile — override
+    # any of these values via policy without touching code.
+    custom:
+      max_file_size_mb: 50
+      max_depth: 10
+      worker_limit: 8
+      scan_archives: false
+
+  scan_timeout_seconds: 3600
+  follow_symlinks: false
+  max_workers: 8
+  max_cpu_percent: 70
+  # Best-effort process-wide memory cap (RLIMIT_AS), applied once at the
+  # start of a scan. POSIX-only (ignored on Windows); never blocks a scan
+  # if setrlimit itself fails.
+  max_memory_mb: 2048
+
+# Locations scanned by default when no --path is given.
+include_paths:
+  windows:
+    - "%USERPROFILE%\\Documents"
+    - "%USERPROFILE%\\Downloads"
+    - "%USERPROFILE%\\Desktop"
+    - "%USERPROFILE%\\Pictures"
+    - "C:\\Users\\Public"
+  linux:
+    - "/home"
+
+# Never scanned unless an administrator explicitly adds them to include_paths.
+exclude_paths:
+  windows:
+    - "C:\\Windows"
+    - "C:\\Program Files"
+    - "C:\\Program Files (x86)"
+    - "C:\\System Volume Information"
+    - "$Recycle.Bin"
+  linux:
+    - "/proc"
+    - "/sys"
+    - "/dev"
+    - "/run"
+
+supported_extensions:
+  - .txt
+  - .csv
+  - .json
+  - .xml
+  - .log
+  - .md
+  - .pdf
+  - .docx
+  - .xlsx
+  - .pptx
+
+# Only scanned when the active profile sets `scan_archives: true` (see
+# `scan.profiles` above — `deep` enables it by default). ZIP/TAR/GZIP
+# members are extracted into an isolated temp directory, scanned with the
+# ordinary parsers, and never recursed into further (no archives-in-archives).
+archive_extensions:
+  - .zip
+  - .tar
+  - .gz
+  - .tgz
+
+ai:
+  enabled: false
+  timeout_seconds: 15
+  max_retries: 2
+
+# Offline queue (spec section 53): a scan whose upload to the backend fails
+# is retried on every scheduler tick until it succeeds or this many days
+# pass, after which it's dropped rather than retried forever. Uploaded
+# scan data otherwise already lives in the local SQLite database (subject
+# to whatever the administrator's own local retention policy is) — this
+# only bounds how long a *pending upload attempt* is retried.
+retention:
+  local_days: 7
+
+# Decompression-bomb guard for zip-based (OOXML) formats: .docx/.xlsx/.pptx.
+# See datasentinel_agent/parsers/archive_guard.py.
+archive_limits:
+  max_members: 10000
+  max_uncompressed_bytes: 524288000  # 500 MiB
+  max_ratio: 200
+
+# Risk engine policy (spec section 17) — deterministic, no ML in the critical
+# path. Every rule here is an explicit, reviewable threshold.
+risk:
+  # Any secret in a file forces the file's risk to CRITICAL, regardless of
+  # what else is (or isn't) in it.
+  secret_forces_critical: true
+  # 3+ distinct sensitive categories in one file signals an aggregated
+  # dataset (e.g. a customer export) — riskier than any single category.
+  aggregation_category_threshold: 3
+  # 10+ occurrences of the same category in one file signals bulk/structured
+  # data rather than an incidental mention.
+  high_occurrence_threshold: 10
+  low_confidence_threshold: 0.5
+  high_exposure_location_keywords:
+    - downloads
+    - desktop
+    - public
+    - shared
+    - temp
+    - tmp

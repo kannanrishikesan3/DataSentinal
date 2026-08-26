@@ -1,0 +1,63 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# --- PyInstaller ---
+*.spec
+!agent/**/*.spec
+
+# --- Node / Frontend ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+!*/.env.example
+*.pem
+*.key
+!**/test_fixtures/**/*.key
+
+# --- Local databases (never commit scan data) ---
+*.sqlite3
+*.db
+agent/datasentinel.db
+
+# --- Logs ---
+*.log
+logs/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+
+# --- Docker ---
+docker/volumes/
+
+# --- Installer build artifacts ---
+*.deb
+*.rpm
+installer/linux/deb/pkgroot/
+installer/linux/rpm/build/
+installer/windows/build/
+installer/windows/*.msi

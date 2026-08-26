@@ -1,0 +1,54 @@
+[Unit]
+Description=DataSentinel Endpoint Agent — scheduled data risk discovery scans
+Documentation=https://github.com/your-org/datasentinel
+After=network-online.target
+Wants=network-online.target
+# Crash-loop protection (spec section 9/33): must live in [Unit], not
+# [Service] — systemd silently ignores it under [Service] (confirmed via
+# journalctl on a real install: "Unknown key name 'StartLimitIntervalSec'
+# in section 'Service', ignoring"), which would let a persistently-crashing
+# service restart unthrottled forever.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Least privilege (spec section 33/35): runs as an unprivileged, dedicated
+# service account by default. It does NOT need root/Administrator —
+# elevation is only ever required if an administrator explicitly configures
+# scan paths this account can't otherwise read.
+User=datasentinel
+Group=datasentinel
+
+# Set to the venv (or PyInstaller build) install location.
+WorkingDirectory=/opt/datasentinel-agent
+Environment=DATASENTINEL_DB_PATH=/var/lib/datasentinel-agent/datasentinel.db
+Environment=DATASENTINEL_SCHEDULES_PATH=/var/lib/datasentinel-agent/schedules.json
+EnvironmentFile=-/etc/datasentinel-agent/agent.env
+ExecStart=/opt/datasentinel-agent/.venv/bin/datasentinel schedule run
+
+# Graceful shutdown: SIGTERM is handled in-process (see cli/main.py's
+# schedule_run) to let an in-flight scan/tick finish before exiting.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+# Restart safely after failure (spec section 33), without hot-looping if
+# something is persistently broken (see [Unit]'s StartLimit* above).
+Restart=on-failure
+RestartSec=10
+
+# Structured logging via the standard systemd journal.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=datasentinel-agent
+
+# Hardening (spec section 35) — safe to enable even for an unprivileged
+# service account; tighten ReadWritePaths to match your real data dirs.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/datasentinel-agent
+
+[Install]
+WantedBy=multi-user.target

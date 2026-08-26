@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --ds-severity-critical: #dc2626;
+  --ds-severity-high: #ea580c;
+  --ds-severity-medium: #ca8a04;
+  --ds-severity-low: #2563eb;
+  --ds-severity-info: #64748b;
+}
+
+body {
+  margin: 0;
+  /* Baseline text color so any element that sets a dark: background without
+     also pairing a dark: text color (the login input / policy-textarea bug
+     this was added to fix) still falls back to something readable, rather
+     than silently inheriting the browser's default near-black form-control
+     text color regardless of theme. This app has no manual theme toggle —
+     dark mode follows the OS/browser's prefers-color-scheme only, matching
+     every dark: variant already used throughout the component library. */
+  color: #0f172a; /* slate-900 */
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: #f1f5f9; /* slate-100 */
+  }
+}
