@@ -11,6 +11,11 @@ pyproject.toml). Register/manage it with:
 Does not require Administrator privileges to *run* (it scans the default
 per-user locations under the service account's own permissions); installing/
 removing the service itself does, same as any Windows service.
+
+Heavy agent imports (scheduler, SQLAlchemy, parsers) are deferred until
+SvcDoRun so the process can answer the Service Control Manager within
+Windows' start timeout. Pulling that graph at module import time is what
+caused error 1053 with the frozen EXE.
 """
 
 from __future__ import annotations
@@ -27,11 +32,6 @@ import servicemanager  # type: ignore[import-not-found]
 import win32service  # type: ignore[import-not-found]
 import win32serviceutil  # type: ignore[import-not-found]
 
-from datasentinel_agent.config.settings import get_settings
-from datasentinel_agent.logging.redaction_filter import redact
-from datasentinel_agent.scheduler import SchedulerService
-from datasentinel_agent.storage.database import init_db, make_engine, make_session_factory
-
 
 class DataSentinelWindowsService(win32serviceutil.ServiceFramework):
     _svc_name_ = "DataSentinelAgent"
@@ -40,7 +40,7 @@ class DataSentinelWindowsService(win32serviceutil.ServiceFramework):
 
     def __init__(self, args):
         super().__init__(args)
-        self._scheduler: SchedulerService | None = None
+        self._scheduler = None
 
     def SvcStop(self) -> None:
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
@@ -48,11 +48,20 @@ class DataSentinelWindowsService(win32serviceutil.ServiceFramework):
             self._scheduler.stop()  # unblocks SvcDoRun's run_forever() promptly
 
     def SvcDoRun(self) -> None:
+        # Tell SCM we are running *before* importing the rest of the agent.
+        # The frozen process otherwise spends the start timeout loading numpy,
+        # lxml, parsers, etc. and Windows kills it with error 1053.
+        self.ReportServiceStatus(win32service.SERVICE_RUNNING)
         servicemanager.LogMsg(
             servicemanager.EVENTLOG_INFORMATION_TYPE,
             servicemanager.PYS_SERVICE_STARTED,
             (self._svc_name_, ""),
         )
+
+        from datasentinel_agent.config.settings import get_settings
+        from datasentinel_agent.logging.redaction_filter import redact
+        from datasentinel_agent.scheduler.service import SchedulerService
+        from datasentinel_agent.storage.database import init_db, make_engine, make_session_factory
 
         settings = get_settings()
         engine = make_engine(settings.db_path)

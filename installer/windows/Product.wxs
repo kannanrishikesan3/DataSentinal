@@ -5,7 +5,7 @@
   Produces DataSentinel-Agent-Setup-x64.msi (spec sections 8/20/44/61/64).
   Build with the WiX v4 CLI (see build.ps1 in this directory):
 
-      wix build Product.wxs -arch x64 -ext WixToolset.Util.wixext -out DataSentinel-Agent-Setup-x64.msi
+      wix build Product.wxs -arch x64 -ext WixToolset.Util.wixext -ext WixToolset.UI.wixext -out DataSentinel-Agent-Setup-x64.msi
 
   IMPORTANT — authored without a Windows/WiX toolchain available to compile
   or run it (this repo was built in a Linux sandbox). Treat this as a
@@ -18,9 +18,9 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
-  <Package name="DataSentinel Agent"
+  <Package Name="DataSentinel Agent"
            Manufacturer="DataSentinel"
-           Version="1.0.0.0"
+           Version="1.0.1.0"
            UpgradeCode="8f2c9e6a-3b1d-4a7e-9c2f-5d6e7a8b9c01"
            Language="1033"
            Compressed="yes"
@@ -81,21 +81,21 @@
          consumes it). Avoid `/l*v` for unattended installs that pass
          either token; see README.md for the file-based alternative if your
          environment mandates verbose logging for audit reasons. -->
-    <Property Id="ORGANIZATION" Value="" />
-    <Property Id="SERVERURL" Value="" />
-    <Property Id="ENDPOINTTOKEN" Value="" Hidden="yes" Secure="yes" />
-    <Property Id="ENROLLMENTTOKEN" Value="" Hidden="yes" Secure="yes" />
-
-    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ORGANIZATION" Secure="yes" />
+    <Property Id="SERVERURL" Secure="yes" />
+    <Property Id="ENDPOINTTOKEN" Hidden="yes" Secure="yes" />
+    <Property Id="ENROLLMENTTOKEN" Hidden="yes" Secure="yes" />
 
     <Feature Id="MainFeature" Title="DataSentinel Agent" Level="1">
       <ComponentGroupRef Id="AgentFiles" />
+      <ComponentGroupRef Id="ServicePayload" />
       <ComponentRef Id="EnvironmentVariables" />
       <ComponentRef Id="ServiceLifecycle" />
     </Feature>
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="DataSentinel">
+        <Directory Id="SERVICEFOLDER" Name="service" />
         <Directory Id="CONFIGFOLDER" Name="config" />
         <Directory Id="LOGSFOLDER" Name="logs" />
         <Directory Id="DATAFOLDER" Name="data" />
@@ -111,12 +111,6 @@
            ../../agent/datasentinel-agent.spec — output name 'datasentinel'). -->
       <Component Id="CliExecutable" Guid="a1b2c3d4-0001-4a11-9e01-000000000001">
         <File Id="DataSentinelExe" Source="build\datasentinel.exe" KeyPath="yes" />
-      </Component>
-
-      <!-- The Windows Service binary (PyInstaller build of service_main.py
-           via ../../agent/datasentinel-agent-service.spec). -->
-      <Component Id="ServiceExecutable" Guid="a1b2c3d4-0002-4a11-9e01-000000000002">
-        <File Id="DataSentinelServiceExe" Source="build\datasentinel-agent-service.exe" KeyPath="yes" />
       </Component>
 
       <Component Id="AlembicConfig" Guid="a1b2c3d4-0003-4a11-9e01-000000000003">
@@ -137,6 +131,13 @@
       <Component Id="DataFolderPlaceholder" Directory="DATAFOLDER" Guid="a1b2c3d4-0006-4a11-9e01-000000000006">
         <CreateFolder />
       </Component>
+    </ComponentGroup>
+
+    <!-- Onedir PyInstaller payload. A one-file service EXE unpacks too
+         slowly for Windows' service-start timeout (error 1053); DLLs must
+         sit next to the exe. Harvested from build\datasentinel-agent-service\. -->
+    <ComponentGroup Id="ServicePayload" Directory="SERVICEFOLDER">
+      <Files Include="build\datasentinel-agent-service\**" />
     </ComponentGroup>
 
     <!-- Per-machine configuration, mirroring what
@@ -197,29 +198,29 @@
                   Return="check" />
 
     <CustomAction Id="InstallService"
-                  Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; install"
+                  Directory="SERVICEFOLDER"
+                  ExeCommand="&quot;[SERVICEFOLDER]datasentinel-agent-service.exe&quot; --startup auto install"
                   Execute="deferred"
                   Impersonate="no"
                   Return="check" />
 
     <CustomAction Id="StartService"
-                  Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; start"
+                  Directory="SERVICEFOLDER"
+                  ExeCommand="&quot;[SERVICEFOLDER]datasentinel-agent-service.exe&quot; start"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
 
     <CustomAction Id="StopService"
-                  Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; stop"
+                  Directory="SERVICEFOLDER"
+                  ExeCommand="&quot;[SERVICEFOLDER]datasentinel-agent-service.exe&quot; stop"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
 
     <CustomAction Id="RemoveService"
-                  Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[INSTALLFOLDER]datasentinel-agent-service.exe&quot; remove"
+                  Directory="SERVICEFOLDER"
+                  ExeCommand="&quot;[SERVICEFOLDER]datasentinel-agent-service.exe&quot; remove"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
@@ -230,15 +231,15 @@
            environment variables are in place. Skipped whenever
            ENDPOINTTOKEN is also given, so a static pre-registered token
            always takes precedence over a reusable enrollment token. -->
-      <Custom Action="EnrollAgent" After="InstallFiles">(NOT Installed OR REINSTALL) AND ENROLLMENTTOKEN AND NOT ENDPOINTTOKEN</Custom>
-      <Custom Action="RunMigrations" After="EnrollAgent">NOT Installed OR REINSTALL</Custom>
-      <Custom Action="InstallService" After="RunMigrations">NOT Installed OR REINSTALL</Custom>
-      <Custom Action="StartService" After="InstallService">NOT Installed OR REINSTALL</Custom>
+      <Custom Action="EnrollAgent" After="InstallFiles" Condition="(NOT Installed OR REINSTALL) AND ENROLLMENTTOKEN AND NOT ENDPOINTTOKEN" />
+      <Custom Action="RunMigrations" After="EnrollAgent" Condition="NOT Installed OR REINSTALL" />
+      <Custom Action="InstallService" After="RunMigrations" Condition="NOT Installed OR REINSTALL" />
+      <Custom Action="StartService" After="InstallService" Condition="NOT Installed OR REINSTALL" />
 
       <!-- Uninstall / upgrade's removal of the old version: stop then
            remove the service before its files are deleted. -->
-      <Custom Action="StopService" Before="RemoveFiles">REMOVE~="ALL" OR (UPGRADINGPRODUCTCODE AND NOT UPGRADINGPRODUCTCODE="")</Custom>
-      <Custom Action="RemoveService" After="StopService">REMOVE~="ALL" OR (UPGRADINGPRODUCTCODE AND NOT UPGRADINGPRODUCTCODE="")</Custom>
+      <Custom Action="StopService" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; OR UPGRADINGPRODUCTCODE" />
+      <Custom Action="RemoveService" After="StopService" Condition="REMOVE~=&quot;ALL&quot; OR UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
 
     <!-- Minimal directory-choice UI; silent installs (/quiet) skip all of

@@ -2,6 +2,12 @@
 # datasentinel-agent.spec (the CLI/on-demand-scan binary) — see
 # service_main.py's docstring for why these can't be one executable.
 #
+# This is an *onedir* build on purpose. A one-file EXE unpacks to a temp
+# directory before Python even starts, which takes longer than Windows'
+# ~30s service-start timeout (error 1053). The service payload lives in
+# installer/windows/build/datasentinel-agent-service/ next to its DLLs so
+# the SCM can call StartServiceCtrlDispatcher immediately.
+#
 # Windows-only build. Running this on Linux/macOS will fail at analysis time
 # (pywin32 isn't installed there) — that's intentional, not a bug: there is
 # no Linux equivalent of this binary (use scripts/datasentinel-agent.service
@@ -47,18 +53,24 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='datasentinel-agent-service',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    name='datasentinel-agent-service',
 )
