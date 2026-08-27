@@ -4,8 +4,8 @@ export function SecretsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Secrets</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Secrets</h1>
+        <p className="text-sm text-muted-foreground">
           API keys, credentials, and tokens found on disk. Evidence is always redacted — full values are never
           displayed.
         </p>

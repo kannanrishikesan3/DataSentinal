@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { useCreateExclusionRule } from '@/api/exclusion-rules'
-import { useEndpoints } from '@/api/endpoints'
+import { useAllEndpoints } from '@/api/endpoints'
 import { useUpdateFindingStatus } from '@/api/findings'
 import { useCurrentUser } from '@/api/me'
 import { SeverityBadge } from '@/components/severity-badge'
@@ -38,7 +38,8 @@ export function FindingDetailDialog({
 }) {
   const updateStatus = useUpdateFindingStatus()
   const createExclusionRule = useCreateExclusionRule()
-  const { data: endpoints } = useEndpoints()
+  const { data: endpointsData } = useAllEndpoints()
+  const endpoints = endpointsData?.items
   const { data: currentUser } = useCurrentUser()
   const [showExclusionForm, setShowExclusionForm] = React.useState(false)
   const [reason, setReason] = React.useState('')
@@ -78,7 +79,7 @@ export function FindingDetailDialog({
           </Field>
           <Field label="Category">
             {categoryLabel(finding.category)}
-            {finding.is_secret && <Badge className="ml-1.5 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">Secret</Badge>}
+            {finding.is_secret && <Badge className="ml-1.5 bg-foreground text-background">Secret</Badge>}
           </Field>
           <Field label="Endpoint">{endpointName}</Field>
           <Field label="File" full>
@@ -94,12 +95,12 @@ export function FindingDetailDialog({
           {finding.page_number != null && <Field label="Page">{finding.page_number}</Field>}
           {finding.sheet_name && <Field label="Sheet">{finding.sheet_name}</Field>}
           <Field label="Evidence" full>
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">{finding.redacted_evidence}</code>
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{finding.redacted_evidence}</code>
           </Field>
         </dl>
 
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
-          {!canMutate && <p className="text-xs text-slate-400">Viewers cannot change findings.</p>}
+        <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+          {!canMutate && <p className="text-xs text-muted-foreground">Viewers cannot change findings.</p>}
           {canMutate && finding.status !== 'false_positive' && (
             <Button
               size="sm"
@@ -137,7 +138,7 @@ export function FindingDetailDialog({
         </div>
 
         {canMutate && showExclusionForm && (
-          <div className="mt-3 space-y-2 rounded-md border border-slate-200 p-3 dark:border-slate-800">
+          <div className="mt-3 space-y-2 rounded-md border border-border p-3">
             <Label htmlFor="exclusion-reason">
               Exclude all "{categoryLabel(finding.category)}" findings — reason
             </Label>
@@ -179,8 +180,8 @@ function Field({
 }) {
   return (
     <div className={full ? `col-span-2 ${className ?? ''}` : className}>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-0.5 text-slate-900 dark:text-slate-100">{children}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-foreground">{children}</dd>
     </div>
   )
 }

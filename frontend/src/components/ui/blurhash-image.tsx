@@ -33,7 +33,7 @@ export function BlurHashImage({
   }, [src])
 
   return (
-    <div className={cn('relative overflow-hidden bg-slate-200 dark:bg-slate-800', className)} style={{ width, height }}>
+    <div className={cn('relative overflow-hidden bg-muted', className)} style={{ width, height }}>
       {!loaded && !failed && blurHash ? (
         <Blurhash
           hash={blurHash}
@@ -47,7 +47,7 @@ export function BlurHashImage({
       ) : null}
 
       {!loaded && !failed && !blurHash ? (
-        <div className="absolute inset-0 animate-pulse bg-slate-200 dark:bg-slate-800" aria-hidden />
+        <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden />
       ) : null}
 
       {!failed ? (
@@ -75,7 +75,7 @@ export function BlurHashImage({
         <div
           role="img"
           aria-label={alt || 'Image failed to load'}
-          className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-400"
+          className="absolute inset-0 flex items-center justify-center bg-muted text-xs text-muted-foreground"
         >
           Failed to load image
         </div>

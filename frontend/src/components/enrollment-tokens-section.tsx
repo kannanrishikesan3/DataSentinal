@@ -9,10 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EnrollmentTokenStatus } from '@/types/api'
 
 const STATUS_STYLES: Record<EnrollmentTokenStatus, string> = {
-  active: 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400',
-  expired: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  revoked: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400',
-  exhausted: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400',
+  active: 'bg-success-bg text-success-fg',
+  expired: 'bg-muted text-muted-foreground',
+  revoked: 'bg-destructive/10 text-destructive',
+  exhausted: 'bg-severity-medium-bg text-severity-medium-fg',
 }
 
 function formatDateTime(value: string): string {
@@ -33,8 +33,8 @@ export function EnrollmentTokensSection() {
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-slate-700 dark:text-slate-300">Enrollment tokens</CardTitle>
-          <p className="mt-1 text-xs text-slate-400">
+          <CardTitle className="text-foreground">Enrollment tokens</CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
             Reusable, expiring tokens for self-service agent deployment — hand one to many people instead of
             registering each endpoint by hand.
           </p>
@@ -45,9 +45,9 @@ export function EnrollmentTokensSection() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading && <p className="text-sm text-slate-400">Loading…</p>}
+        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
         {!isLoading && tokens && tokens.length === 0 && (
-          <p className="py-6 text-center text-sm text-slate-400">
+          <p className="py-6 text-center text-sm text-muted-foreground">
             No enrollment tokens yet. Create one to deploy the agent to multiple machines at once.
           </p>
         )}
@@ -67,16 +67,16 @@ export function EnrollmentTokensSection() {
             <TableBody>
               {tokens.map((token) => (
                 <TableRow key={token.id}>
-                  <TableCell className="font-medium text-slate-900 dark:text-slate-100">{token.name}</TableCell>
+                  <TableCell className="font-medium text-foreground">{token.name}</TableCell>
                   <TableCell>
                     <Badge className={STATUS_STYLES[token.status]}>{token.status}</Badge>
                   </TableCell>
-                  <TableCell className="text-slate-500">
+                  <TableCell className="text-muted-foreground">
                     {token.current_uses} / {token.max_uses}
                   </TableCell>
-                  <TableCell className="capitalize text-slate-500">{token.allowed_os ?? 'Any'}</TableCell>
-                  <TableCell className="text-slate-500">{policyName(token.policy_id)}</TableCell>
-                  <TableCell className="text-slate-500">{formatDateTime(token.expires_at)}</TableCell>
+                  <TableCell className="capitalize text-muted-foreground">{token.allowed_os ?? 'Any'}</TableCell>
+                  <TableCell className="text-muted-foreground">{policyName(token.policy_id)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateTime(token.expires_at)}</TableCell>
                   <TableCell className="text-right">
                     {token.status === 'active' && (
                       <Button

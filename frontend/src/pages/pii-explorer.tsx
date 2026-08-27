@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { useEndpoints } from '@/api/endpoints'
+import { useAllEndpoints } from '@/api/endpoints'
 import { FindingsTable } from '@/components/findings-table'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +21,8 @@ const CATEGORY_GROUPS: { label: string; categories: string[] | null; isSecret?: 
 ]
 
 export function PiiExplorerPage() {
-  const { data: endpoints } = useEndpoints()
+  const { data: endpointsData } = useAllEndpoints()
+  const endpoints = endpointsData?.items
   const [activeGroup, setActiveGroup] = React.useState(0)
   const [severity, setSeverity] = React.useState<string>(ALL)
   const [status, setStatus] = React.useState<string>(ALL)
@@ -47,8 +48,8 @@ export function PiiExplorerPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">PII Explorer</h1>
-        <p className="text-sm text-slate-500">Browse detected personal information and secrets by category.</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">PII Explorer</h1>
+        <p className="text-sm text-muted-foreground">Browse detected personal information and secrets by category.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -59,8 +60,8 @@ export function PiiExplorerPage() {
             className={cn(
               'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
               index === activeGroup
-                ? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900'
-                : 'border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800',
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-input text-muted-foreground hover:bg-accent hover:text-accent-foreground',
             )}
           >
             {groupOption.label}
@@ -111,7 +112,7 @@ export function PiiExplorerPage() {
         </Select>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor="pii-file-type" className="text-xs text-slate-400">
+          <Label htmlFor="pii-file-type" className="text-xs text-muted-foreground">
             File type
           </Label>
           <Input
@@ -124,7 +125,7 @@ export function PiiExplorerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor="pii-date-from" className="text-xs text-slate-400">
+          <Label htmlFor="pii-date-from" className="text-xs text-muted-foreground">
             From
           </Label>
           <Input
@@ -137,7 +138,7 @@ export function PiiExplorerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor="pii-date-to" className="text-xs text-slate-400">
+          <Label htmlFor="pii-date-to" className="text-xs text-muted-foreground">
             To
           </Label>
           <Input
@@ -170,7 +171,7 @@ function MultiCategoryFindingsTable({ baseFilters, categories }: { baseFilters: 
     <div className="space-y-6">
       {categories.map((category) => (
         <div key={category}>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{category.replace('_', ' ')}</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{category.replace('_', ' ')}</h2>
           <FindingsTable filters={{ ...baseFilters, category }} />
         </div>
       ))}

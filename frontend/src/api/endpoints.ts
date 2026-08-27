@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { apiClient } from '@/lib/api-client'
-import type { EndpointRecord, EndpointRegisterResponse } from '@/types/api'
+import { apiClient, buildQueryString } from '@/lib/api-client'
+import type { EndpointRecord, EndpointRegisterResponse, PaginatedEndpoints } from '@/types/api'
 
 interface RegisterEndpointInput {
   name: string
@@ -11,11 +11,28 @@ interface RegisterEndpointInput {
   agent_version?: string
 }
 
-export function useEndpoints() {
+interface EndpointListParams {
+  q?: string
+  limit?: number
+  offset?: number
+}
+
+// Every registered endpoint's org membership makes this list naturally
+// bounded in practice; used by dropdowns/lookups (finding detail, PII
+// Explorer, filters) that need "effectively all" rather than one page.
+const LOOKUP_LIMIT = 500
+
+export function useEndpoints(params: EndpointListParams = {}) {
   return useQuery({
-    queryKey: ['endpoints'],
-    queryFn: () => apiClient.get<EndpointRecord[]>('/api/v1/endpoints'),
+    queryKey: ['endpoints', params],
+    queryFn: () =>
+      apiClient.get<PaginatedEndpoints>(`/api/v1/endpoints${buildQueryString({ ...params })}`),
   })
+}
+
+/** For dropdowns/lookups that need every endpoint, not one paginated page. */
+export function useAllEndpoints() {
+  return useEndpoints({ limit: LOOKUP_LIMIT })
 }
 
 export function useRegisterEndpoint() {

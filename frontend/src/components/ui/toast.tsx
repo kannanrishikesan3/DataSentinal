@@ -1,3 +1,4 @@
+import { CheckCircle2, XCircle } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -48,13 +49,19 @@ export function Toaster() {
       {items.map((item) => (
         <div
           key={item.id}
+          role="status"
           className={cn(
-            'pointer-events-auto rounded-md px-4 py-2 text-sm shadow-lg ring-1 ring-inset',
+            'pointer-events-auto flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2',
             item.variant === 'success'
-              ? 'bg-slate-900 text-white ring-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-300'
-              : 'bg-red-600 text-white ring-red-700',
+              ? 'border-success/30 bg-success-bg text-success-fg'
+              : 'border-destructive/30 bg-destructive/10 text-destructive',
           )}
         >
+          {item.variant === 'success' ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          ) : (
+            <XCircle className="h-4 w-4 shrink-0" />
+          )}
           {item.message}
         </div>
       ))}

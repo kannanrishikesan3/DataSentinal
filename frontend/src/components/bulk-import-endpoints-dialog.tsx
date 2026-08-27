@@ -42,7 +42,7 @@ export function BulkImportEndpointsDialog() {
           <DialogTitle>Bulk-import endpoints</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           For a known list of devices (e.g. an IT asset inventory) — download the template, fill in one row per
           device, then upload it. Each successfully created endpoint gets its own API token, shown once below.
         </p>
@@ -59,17 +59,17 @@ export function BulkImportEndpointsDialog() {
             accept=".xlsx"
             onChange={handleFileChange}
             disabled={bulkImport.isPending}
-            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800 dark:text-slate-400 dark:file:bg-slate-100 dark:file:text-slate-900"
+            className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
           />
-          {bulkImport.isPending && <p className="text-xs text-slate-400">Importing…</p>}
+          {bulkImport.isPending && <p className="text-xs text-muted-foreground">Importing…</p>}
         </div>
 
         {result && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <p className="text-sm font-medium text-foreground">
               {result.created} created, {result.failed} failed
             </p>
-            <div className="max-h-64 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-800">
+            <div className="max-h-64 overflow-y-auto rounded-md border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -85,11 +85,11 @@ export function BulkImportEndpointsDialog() {
                       <TableCell className="font-mono text-xs">{row.hostname}</TableCell>
                       <TableCell>
                         {row.status === 'created' ? (
-                          <code className="break-all rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-slate-800">
+                          <code className="break-all rounded bg-muted px-1 py-0.5 text-xs">
                             {row.api_token}
                           </code>
                         ) : (
-                          <span className="text-xs text-red-600">{row.error}</span>
+                          <span className="text-xs text-destructive">{row.error}</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -97,7 +97,7 @@ export function BulkImportEndpointsDialog() {
                 </TableBody>
               </Table>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Copy each token now — like a single registration, none of these are shown again after you close this
               dialog.
             </p>

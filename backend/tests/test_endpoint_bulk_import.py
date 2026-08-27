@@ -56,7 +56,7 @@ def test_bulk_import_creates_every_valid_row(client, auth_headers):
     assert all(row["status"] == "created" for row in body["rows"])
     assert all(row["api_token"].startswith("dsat_") for row in body["rows"])
 
-    endpoints = client.get("/api/v1/endpoints", headers=auth_headers).json()
+    endpoints = client.get("/api/v1/endpoints", headers=auth_headers).json()["items"]
     hostnames = {e["hostname"] for e in endpoints}
     assert {"FIN-01", "build-01"} <= hostnames
 
@@ -166,7 +166,7 @@ def test_bulk_import_is_audit_logged_with_a_summary_not_raw_tokens(client, auth_
         "/api/v1/endpoints/bulk-import", headers=auth_headers,
         files={"file": ("import.xlsx", file_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
     )
-    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()
+    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()["items"]
     entry = next(e for e in logs if e["action"] == "endpoints.bulk_imported")
     assert entry["details"]["created"] == 1
     assert "dsat_" not in str(entry)

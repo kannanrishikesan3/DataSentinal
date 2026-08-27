@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { useEndpoints } from '@/api/endpoints'
+import { useAllEndpoints } from '@/api/endpoints'
 import { FindingsTable } from '@/components/findings-table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { FindingListFilters, FindingStatus, Severity } from '@/types/api'
@@ -8,7 +8,8 @@ import type { FindingListFilters, FindingStatus, Severity } from '@/types/api'
 const ALL = '__all__'
 
 export function FindingsPage() {
-  const { data: endpoints } = useEndpoints()
+  const { data: endpointsData } = useAllEndpoints()
+  const endpoints = endpointsData?.items
   const [severity, setSeverity] = React.useState<string>(ALL)
   const [status, setStatus] = React.useState<string>(ALL)
   const [endpointId, setEndpointId] = React.useState<string>(ALL)
@@ -22,8 +23,8 @@ export function FindingsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Findings</h1>
-        <p className="text-sm text-slate-500">Every PII and secret detection across your organization.</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Findings</h1>
+        <p className="text-sm text-muted-foreground">Every PII and secret detection across your organization.</p>
       </div>
 
       <div className="flex flex-wrap gap-3">

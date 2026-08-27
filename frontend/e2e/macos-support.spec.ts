@@ -47,7 +47,7 @@ test.describe('Phase 2 — macOS platform support', () => {
 
     await expect(page.getByText(hostname.toUpperCase()).first()).toBeVisible()
     const row = page.getByRole('row').filter({ hasText: hostname.toUpperCase() })
-    await expect(row).toContainText('macos')
+    await expect(row).toContainText('macOS')
   })
 
   test('Create enrollment token dialog offers "macOS only" as an allowed-OS option', async ({ page }) => {

@@ -1,27 +1,220 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* DataSentinel design tokens (see DESIGN.md). OS-driven dark mode only, no
+   manual toggle — @media (prefers-color-scheme) covers every reachable
+   state, so both palettes below are first-class, not a "default + dark
+   afterthought". Restrained color strategy: tinted cool neutrals + one
+   indigo accent for actions/focus/selection. Severity hues are deliberately
+   distinct from the action-accent hue so "this is clickable" is never
+   confused with "this is a risk signal". */
 
 :root {
-  --ds-severity-critical: #dc2626;
-  --ds-severity-high: #ea580c;
-  --ds-severity-medium: #ca8a04;
-  --ds-severity-low: #2563eb;
-  --ds-severity-info: #64748b;
+  --background: oklch(0.99 0.002 255);
+  --foreground: oklch(0.19 0.02 255);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.02 255);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.02 255);
+
+  --primary: oklch(0.5 0.17 258);
+  --primary-foreground: oklch(0.98 0.005 258);
+
+  --secondary: oklch(0.95 0.005 255);
+  --secondary-foreground: oklch(0.28 0.02 255);
+
+  --muted: oklch(0.96 0.004 255);
+  --muted-foreground: oklch(0.5 0.015 255);
+
+  --accent: oklch(0.94 0.02 258);
+  --accent-foreground: oklch(0.32 0.06 258);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 25);
+
+  --border: oklch(0.91 0.005 255);
+  --input: oklch(0.91 0.005 255);
+  --ring: oklch(0.5 0.17 258);
+
+  --radius: 0.5rem;
+
+  /* Secondary neutral layer (product.md: "sidebars/toolbars slightly
+     cooler than the content surface") — deliberately near-black even in
+     light mode, matching the Datadog/Grafana reference's persistent dark
+     nav rail rather than a flat white sidebar. */
+  --sidebar: oklch(0.19 0.015 255);
+  --sidebar-foreground: oklch(0.82 0.01 255);
+  --sidebar-border: oklch(0.27 0.015 255);
+  --sidebar-accent: oklch(0.28 0.05 258);
+  --sidebar-accent-foreground: oklch(0.95 0.02 258);
+  --sidebar-muted-foreground: oklch(0.58 0.012 255);
+
+  /* Severity — one hue family each, distinct from --primary's 258. Each
+     has a solid (dot/chart/icon) and a soft tinted-background (badge)
+     variant, both AA-contrast against their paired foreground in both
+     color schemes. */
+  --severity-critical: oklch(0.55 0.22 25);
+  --severity-critical-bg: oklch(0.96 0.03 25);
+  --severity-critical-fg: oklch(0.4 0.19 25);
+
+  --severity-high: oklch(0.62 0.19 45);
+  --severity-high-bg: oklch(0.96 0.04 55);
+  --severity-high-fg: oklch(0.46 0.16 45);
+
+  --severity-medium: oklch(0.62 0.15 85);
+  --severity-medium-bg: oklch(0.96 0.05 95);
+  --severity-medium-fg: oklch(0.45 0.13 85);
+
+  --severity-low: oklch(0.55 0.13 220);
+  --severity-low-bg: oklch(0.95 0.025 220);
+  --severity-low-fg: oklch(0.42 0.12 220);
+
+  --severity-info: oklch(0.55 0.015 255);
+  --severity-info-bg: oklch(0.95 0.004 255);
+  --severity-info-fg: oklch(0.45 0.015 255);
+
+  --success: oklch(0.55 0.15 150);
+  --success-bg: oklch(0.95 0.035 150);
+  --success-fg: oklch(0.4 0.13 150);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.012 255);
+    --foreground: oklch(0.92 0.006 255);
+
+    --card: oklch(0.21 0.014 255);
+    --card-foreground: oklch(0.92 0.006 255);
+
+    --popover: oklch(0.22 0.014 255);
+    --popover-foreground: oklch(0.92 0.006 255);
+
+    --primary: oklch(0.72 0.15 258);
+    --primary-foreground: oklch(0.16 0.02 258);
+
+    --secondary: oklch(0.27 0.014 255);
+    --secondary-foreground: oklch(0.9 0.006 255);
+
+    --muted: oklch(0.25 0.012 255);
+    --muted-foreground: oklch(0.64 0.012 255);
+
+    --accent: oklch(0.29 0.035 258);
+    --accent-foreground: oklch(0.87 0.03 258);
+
+    --destructive: oklch(0.65 0.2 25);
+    --destructive-foreground: oklch(0.16 0.02 25);
+
+    --border: oklch(0.3 0.014 255);
+    --input: oklch(0.3 0.014 255);
+    --ring: oklch(0.72 0.15 258);
+
+    --sidebar: oklch(0.13 0.012 255);
+    --sidebar-foreground: oklch(0.8 0.008 255);
+    --sidebar-border: oklch(0.23 0.012 255);
+    --sidebar-accent: oklch(0.3 0.06 258);
+    --sidebar-accent-foreground: oklch(0.95 0.02 258);
+    --sidebar-muted-foreground: oklch(0.55 0.012 255);
+
+    --severity-critical: oklch(0.68 0.19 25);
+    --severity-critical-bg: oklch(0.28 0.07 25);
+    --severity-critical-fg: oklch(0.85 0.09 25);
+
+    --severity-high: oklch(0.72 0.16 50);
+    --severity-high-bg: oklch(0.3 0.07 55);
+    --severity-high-fg: oklch(0.85 0.09 50);
+
+    --severity-medium: oklch(0.75 0.13 90);
+    --severity-medium-bg: oklch(0.32 0.06 95);
+    --severity-medium-fg: oklch(0.87 0.08 90);
+
+    --severity-low: oklch(0.72 0.11 220);
+    --severity-low-bg: oklch(0.28 0.045 220);
+    --severity-low-fg: oklch(0.84 0.06 220);
+
+    --severity-info: oklch(0.68 0.012 255);
+    --severity-info-bg: oklch(0.28 0.008 255);
+    --severity-info-fg: oklch(0.8 0.01 255);
+
+    --success: oklch(0.7 0.14 150);
+    --success-bg: oklch(0.28 0.055 150);
+    --success-fg: oklch(0.84 0.08 150);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+
+  --color-severity-critical: var(--severity-critical);
+  --color-severity-critical-bg: var(--severity-critical-bg);
+  --color-severity-critical-fg: var(--severity-critical-fg);
+  --color-severity-high: var(--severity-high);
+  --color-severity-high-bg: var(--severity-high-bg);
+  --color-severity-high-fg: var(--severity-high-fg);
+  --color-severity-medium: var(--severity-medium);
+  --color-severity-medium-bg: var(--severity-medium-bg);
+  --color-severity-medium-fg: var(--severity-medium-fg);
+  --color-severity-low: var(--severity-low);
+  --color-severity-low-bg: var(--severity-low-bg);
+  --color-severity-low-fg: var(--severity-low-fg);
+  --color-severity-info: var(--severity-info);
+  --color-severity-info-bg: var(--severity-info-bg);
+  --color-severity-info-fg: var(--severity-info-fg);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 body {
   margin: 0;
-  /* Baseline text color so any element that sets a dark: background without
-     also pairing a dark: text color (the login input / policy-textarea bug
-     this was added to fix) still falls back to something readable, rather
-     than silently inheriting the browser's default near-black form-control
-     text color regardless of theme. This app has no manual theme toggle —
-     dark mode follows the OS/browser's prefers-color-scheme only, matching
-     every dark: variant already used throughout the component library. */
-  color: #0f172a; /* slate-900 */
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    color: #f1f5f9; /* slate-100 */
+* {
+  border-color: var(--border);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -67,6 +67,11 @@ class EndpointRegisterResponse(BaseModel):
     api_token: str  # shown exactly once
 
 
+class PaginatedEndpoints(BaseModel):
+    total: int
+    items: list[EndpointResponse]
+
+
 class EndpointUpdateRequest(BaseModel):
     """Admin-only: assign or clear this endpoint's policy override. Every
     other endpoint field is set at registration/enrollment time and isn't
@@ -226,6 +231,11 @@ class ScanResponse(BaseModel):
     severity_counts: dict[str, int]
 
 
+class PaginatedScans(BaseModel):
+    total: int
+    items: list[ScanResponse]
+
+
 class FindingResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -342,3 +352,8 @@ class AuditLogResponse(BaseModel):
     target_id: str | None
     details: dict | None
     created_at: datetime
+
+
+class PaginatedAuditLogs(BaseModel):
+    total: int
+    items: list[AuditLogResponse]

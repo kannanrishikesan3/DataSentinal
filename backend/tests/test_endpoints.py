@@ -60,7 +60,9 @@ def test_list_endpoints_returns_registered_endpoints(client, auth_headers):
     _register(client, auth_headers)
     response = client.get("/api/v1/endpoints", headers=auth_headers)
     assert response.status_code == 200
-    assert len(response.json()) == 1
+    body = response.json()
+    assert body["total"] == 1
+    assert len(body["items"]) == 1
 
 
 def test_registered_api_token_authenticates_scan_submission(client, auth_headers):
@@ -130,7 +132,7 @@ def test_register_endpoint_succeeds_for_admin(client, auth_headers):
 def test_freshly_registered_endpoint_has_no_scan_and_zero_risk(client, auth_headers):
     _register(client, auth_headers)
     response = client.get("/api/v1/endpoints", headers=auth_headers)
-    endpoint = response.json()[0]
+    endpoint = response.json()["items"][0]
     assert endpoint["last_scan"] is None
     assert endpoint["risk_score"] == 0
 
@@ -214,7 +216,7 @@ def test_endpoint_reflects_last_scan_and_risk_score_after_scan(client, auth_head
     client.post("/api/v1/scans", json=scan_payload, headers={"Authorization": f"Bearer {api_token}"})
 
     response = client.get("/api/v1/endpoints", headers=auth_headers)
-    endpoint = response.json()[0]
+    endpoint = response.json()["items"][0]
     assert endpoint["last_scan"] is not None
     assert endpoint["last_scan"].startswith("2026-01-01T00:05:00")
     assert endpoint["risk_score"] == 3  # SEVERITY_ORDER["high"]
@@ -246,3 +248,29 @@ def test_non_admin_cannot_assign_an_endpoint_policy(client, auth_headers, viewer
     endpoint_id = _register(client, auth_headers).json()["endpoint"]["id"]
     response = client.patch(f"/api/v1/endpoints/{endpoint_id}", headers=viewer_auth_headers, json={"policy_id": None})
     assert response.status_code == 403
+
+
+def test_endpoints_search_matches_name_or_hostname(client, auth_headers):
+    _register(client, auth_headers, hostname="FIN-LAPTOP-01")
+    _register(client, auth_headers, hostname="ENG-DESKTOP-02")
+
+    by_hostname = client.get("/api/v1/endpoints?q=fin-laptop", headers=auth_headers).json()
+    assert by_hostname["total"] == 1
+    assert by_hostname["items"][0]["hostname"] == "FIN-LAPTOP-01"
+
+    no_match = client.get("/api/v1/endpoints?q=does-not-exist", headers=auth_headers).json()
+    assert no_match["total"] == 0
+    assert no_match["items"] == []
+
+
+def test_endpoints_pagination_offset_and_limit(client, auth_headers):
+    for i in range(5):
+        _register(client, auth_headers, hostname=f"HOST-{i:02d}")
+
+    page1 = client.get("/api/v1/endpoints?limit=2&offset=0", headers=auth_headers).json()
+    assert page1["total"] == 5
+    assert len(page1["items"]) == 2
+
+    page2 = client.get("/api/v1/endpoints?limit=2&offset=2", headers=auth_headers).json()
+    assert len(page2["items"]) == 2
+    assert {item["hostname"] for item in page1["items"]}.isdisjoint({item["hostname"] for item in page2["items"]})

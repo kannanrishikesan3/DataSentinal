@@ -12,8 +12,8 @@ export function SettingsPage() {
   return (
     <div className="max-w-lg space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Settings</h1>
-        <p className="text-sm text-slate-500">Your account and session.</p>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground">Your account and session.</p>
       </div>
 
       {isLoading && <PageSkeleton />}
@@ -22,26 +22,26 @@ export function SettingsPage() {
       {!isLoading && !isError && user && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-700 dark:text-slate-300">Account</CardTitle>
+            <CardTitle className="text-foreground">Account</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Email</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">{user.email}</span>
+              <span className="text-muted-foreground">Email</span>
+              <span className="font-medium text-foreground">{user.email}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Role</span>
+              <span className="text-muted-foreground">Role</span>
               <Badge variant="outline" className="capitalize">
                 {user.role}
               </Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Organization ID</span>
-              <span className="font-mono text-xs text-slate-500">{user.org_id}</span>
+              <span className="text-muted-foreground">Organization ID</span>
+              <span className="font-mono text-xs text-muted-foreground">{user.org_id}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Member since</span>
-              <span className="text-slate-900 dark:text-slate-100">{new Date(user.created_at).toLocaleDateString()}</span>
+              <span className="text-muted-foreground">Member since</span>
+              <span className="text-foreground">{new Date(user.created_at).toLocaleDateString()}</span>
             </div>
             <Button variant="outline" className="w-full" onClick={logout}>
               Sign out

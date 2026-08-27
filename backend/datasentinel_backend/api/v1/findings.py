@@ -39,10 +39,13 @@ def list_findings(
     file_type: str | None = None,
     detected_after: datetime | None = None,
     detected_before: datetime | None = None,
+    q: str | None = Query(None, description="Case-insensitive substring search on file path"),
     limit: int = 100,
     offset: int = 0,
 ) -> PaginatedFindings:
     stmt = select(Finding).where(Finding.org_id == user.org_id)
+    if q:
+        stmt = stmt.where(Finding.file_path.ilike(f"%{q}%"))
     if endpoint_id is not None:
         stmt = stmt.where(Finding.endpoint_id == endpoint_id)
     if scan_id is not None:

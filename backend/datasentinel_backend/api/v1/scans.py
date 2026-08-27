@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from datasentinel_backend.api.v1.schemas import ScanReportRequest, ScanResponse
+from datasentinel_backend.api.v1.schemas import PaginatedScans, ScanReportRequest, ScanResponse
 from datasentinel_backend.core.database import get_db
 from datasentinel_backend.models.models import Endpoint, Scan, User
 from datasentinel_backend.security.dependencies import get_current_endpoint, get_current_user
@@ -51,18 +51,31 @@ def cancel_scan_route(
     return scan
 
 
-@router.get("", response_model=list[ScanResponse])
+@router.get("", response_model=PaginatedScans)
 def list_scans(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     endpoint_id: uuid.UUID | None = None,
+    q: str | None = Query(None, description="Case-insensitive substring search on the scan's endpoint name/hostname"),
     limit: int = 50,
-) -> list[Scan]:
+    offset: int = 0,
+) -> PaginatedScans:
     stmt = select(Scan).where(Scan.org_id == user.org_id)
     if endpoint_id is not None:
         stmt = stmt.where(Scan.endpoint_id == endpoint_id)
-    stmt = stmt.order_by(Scan.requested_at.desc()).limit(min(limit, 500))
-    return list(db.execute(stmt).scalars())
+    if q:
+        stmt = stmt.where(
+            Scan.endpoint_id.in_(
+                select(Endpoint.id).where(
+                    Endpoint.org_id == user.org_id,
+                    or_(Endpoint.name.ilike(f"%{q}%"), Endpoint.hostname.ilike(f"%{q}%")),
+                )
+            )
+        )
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = stmt.order_by(Scan.requested_at.desc()).limit(min(limit, 500)).offset(max(offset, 0))
+    items = list(db.execute(stmt).scalars())
+    return PaginatedScans(total=total, items=items)
 
 
 @router.get("/{scan_id}", response_model=ScanResponse)

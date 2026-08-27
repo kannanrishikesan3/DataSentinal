@@ -64,12 +64,12 @@ export function CreateEnrollmentTokenDialog() {
             <DialogHeader>
               <DialogTitle>Enrollment token created</DialogTitle>
             </DialogHeader>
-            <p className="mb-2 text-sm text-slate-500">
+            <p className="mb-2 text-sm text-muted-foreground">
               Copy this token and share it with the people deploying agents. It will not be shown again — hand it out
-              now, then use <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">datasentinel enroll</code>{' '}
+              now, then use <code className="rounded bg-muted px-1">datasentinel enroll</code>{' '}
               (or the equivalent silent-install parameter) on each machine.
             </p>
-            <code className="block break-all rounded-md bg-slate-100 p-3 text-xs dark:bg-slate-800">{issuedToken}</code>
+            <code className="block break-all rounded-md bg-muted p-3 text-xs">{issuedToken}</code>
             <Button className="mt-4 w-full" variant="outline" onClick={() => handleOpenChange(false)}>
               Done
             </Button>
@@ -144,11 +144,11 @@ export function CreateEnrollmentTokenDialog() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   Every endpoint that enrolls with this token gets this policy applied automatically.
                 </p>
               </div>
-              {createToken.isError && <p className="text-sm text-red-600">Could not create the token. Try again.</p>}
+              {createToken.isError && <p className="text-sm text-destructive">Could not create the token. Try again.</p>}
               <Button type="submit" className="w-full" disabled={createToken.isPending}>
                 {createToken.isPending ? 'Generating…' : 'Generate token'}
               </Button>

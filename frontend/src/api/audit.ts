@@ -1,11 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { apiClient } from '@/lib/api-client'
-import type { AuditLogEntry } from '@/types/api'
+import { apiClient, buildQueryString } from '@/lib/api-client'
+import type { PaginatedAuditLogs } from '@/types/api'
 
-export function useAuditLogs() {
+interface AuditLogListParams {
+  q?: string
+  limit?: number
+  offset?: number
+}
+
+export function useAuditLogs(params: AuditLogListParams = {}) {
   return useQuery({
-    queryKey: ['audit-logs'],
-    queryFn: () => apiClient.get<AuditLogEntry[]>('/api/v1/audit-logs'),
+    queryKey: ['audit-logs', params],
+    queryFn: () => apiClient.get<PaginatedAuditLogs>(`/api/v1/audit-logs${buildQueryString({ ...params })}`),
   })
 }

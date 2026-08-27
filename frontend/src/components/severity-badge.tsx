@@ -2,19 +2,19 @@ import { cn } from '@/lib/utils'
 import type { Severity } from '@/types/api'
 
 const SEVERITY_STYLES: Record<Severity, string> = {
-  critical: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20 dark:bg-red-950/40 dark:text-red-400',
-  high: 'bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-600/20 dark:bg-orange-950/40 dark:text-orange-400',
-  medium: 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20 dark:bg-yellow-950/40 dark:text-yellow-400',
-  low: 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-950/40 dark:text-blue-400',
-  informational: 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-500/20 dark:bg-slate-800 dark:text-slate-400',
+  critical: 'bg-severity-critical-bg text-severity-critical-fg',
+  high: 'bg-severity-high-bg text-severity-high-fg',
+  medium: 'bg-severity-medium-bg text-severity-medium-fg',
+  low: 'bg-severity-low-bg text-severity-low-fg',
+  informational: 'bg-severity-info-bg text-severity-info-fg',
 }
 
 const SEVERITY_DOT: Record<Severity, string> = {
-  critical: 'bg-red-600',
-  high: 'bg-orange-600',
-  medium: 'bg-yellow-600',
-  low: 'bg-blue-600',
-  informational: 'bg-slate-500',
+  critical: 'bg-severity-critical',
+  high: 'bg-severity-high',
+  medium: 'bg-severity-medium',
+  low: 'bg-severity-low',
+  informational: 'bg-severity-info',
 }
 
 const SEVERITY_LABEL: Record<Severity, string> = {
@@ -34,18 +34,23 @@ export function SeverityBadge({ severity, className }: { severity: Severity; cla
         className,
       )}
     >
-      <span className={cn('h-1.5 w-1.5 rounded-full', SEVERITY_DOT[severity])} />
+      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', SEVERITY_DOT[severity])} />
       {SEVERITY_LABEL[severity]}
     </span>
   )
 }
 
+// `var(--...)` references, not resolved hex — SVG presentation attributes
+// (Recharts' fill/stroke props) accept CSS custom properties directly, so
+// these stay live across a system light/dark switch instead of freezing
+// at whatever scheme was active on first render, and always match the
+// badges/dots above from one source of truth (index.css).
 export const SEVERITY_CHART_COLORS: Record<Severity, string> = {
-  critical: '#dc2626',
-  high: '#ea580c',
-  medium: '#ca8a04',
-  low: '#2563eb',
-  informational: '#64748b',
+  critical: 'var(--severity-critical)',
+  high: 'var(--severity-high)',
+  medium: 'var(--severity-medium)',
+  low: 'var(--severity-low)',
+  informational: 'var(--severity-info)',
 }
 
 export const SEVERITY_ORDER: Severity[] = ['critical', 'high', 'medium', 'low', 'informational']

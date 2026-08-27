@@ -26,6 +26,11 @@ export interface EndpointRegisterResponse {
   api_token: string
 }
 
+export interface PaginatedEndpoints {
+  total: number
+  items: EndpointRecord[]
+}
+
 export interface ScanRecord {
   id: string
   endpoint_id: string
@@ -40,6 +45,11 @@ export interface ScanRecord {
   pii_findings: number
   secret_findings: number
   severity_counts: Partial<Record<Severity, number>>
+}
+
+export interface PaginatedScans {
+  total: number
+  items: ScanRecord[]
 }
 
 export interface FindingRecord {
@@ -98,6 +108,11 @@ export interface AuditLogEntry {
   created_at: string
 }
 
+export interface PaginatedAuditLogs {
+  total: number
+  items: AuditLogEntry[]
+}
+
 export interface PolicyRecord {
   id: string
   name: string
@@ -122,6 +137,7 @@ export interface FindingListFilters {
   file_type?: string
   detected_after?: string
   detected_before?: string
+  q?: string
   limit?: number
   offset?: number
 }

@@ -1,3 +1,5 @@
+import * as React from 'react'
+
 import { useCurrentUser } from '@/api/me'
 import { useEndpoints, useUpdateEndpointPolicy } from '@/api/endpoints'
 import { usePolicies } from '@/api/policies'
@@ -6,11 +8,22 @@ import { EmptyState, PageError, PageSkeleton } from '@/components/page-states'
 import { RegisterEndpointDialog } from '@/components/register-endpoint-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/pagination'
+import { SearchInput } from '@/components/ui/search-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
 
+const PAGE_SIZE = 25
+
 const NO_POLICY = '__none__'
+
+const OS_LABELS: Record<string, string> = { windows: 'Windows', linux: 'Linux', macos: 'macOS' }
+
+function osLabel(os: string): string {
+  return OS_LABELS[os] ?? os
+}
 
 function formatDateTime(value: string | null): string {
   if (!value) return 'Never'
@@ -18,11 +31,11 @@ function formatDateTime(value: string | null): string {
 }
 
 const RISK_SCORE_BANDS: { label: string; className: string }[] = [
-  { label: 'None', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-  { label: 'Low', className: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400' },
-  { label: 'Medium', className: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400' },
-  { label: 'High', className: 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400' },
-  { label: 'Critical', className: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
+  { label: 'None', className: 'bg-muted text-muted-foreground' },
+  { label: 'Low', className: 'bg-severity-low-bg text-severity-low-fg' },
+  { label: 'Medium', className: 'bg-severity-medium-bg text-severity-medium-fg' },
+  { label: 'High', className: 'bg-severity-high-bg text-severity-high-fg' },
+  { label: 'Critical', className: 'bg-severity-critical-bg text-severity-critical-fg' },
 ]
 
 function RiskScoreBadge({ riskScore }: { riskScore: number }) {
@@ -41,7 +54,7 @@ function PolicyCell({ endpointId, policyId }: { endpointId: string; policyId: st
   const isAdmin = currentUser?.role === 'admin'
 
   if (!isAdmin) {
-    return <span className="text-slate-500">{policies?.find((p) => p.id === policyId)?.name ?? '—'}</span>
+    return <span className="text-muted-foreground">{policies?.find((p) => p.id === policyId)?.name ?? '—'}</span>
   }
 
   return (
@@ -67,22 +80,31 @@ function PolicyCell({ endpointId, policyId }: { endpointId: string; policyId: st
 }
 
 export function EndpointsPage() {
-  const { data: endpoints, isLoading, isError, error, refetch } = useEndpoints()
+  const [search, setSearch] = React.useState('')
+  const [offset, setOffset] = React.useState(0)
+  const q = useDebouncedValue(search)
+
+  React.useEffect(() => setOffset(0), [q])
+
+  const { data, isLoading, isError, error, refetch } = useEndpoints({ q: q || undefined, limit: PAGE_SIZE, offset })
+  const endpoints = data?.items
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Endpoints</h1>
-          <p className="text-sm text-slate-500">Devices enrolled for discovery scanning.</p>
+          <h1 className="text-xl font-semibold text-foreground">Endpoints</h1>
+          <p className="text-sm text-muted-foreground">Devices enrolled for discovery scanning.</p>
         </div>
         <RegisterEndpointDialog />
       </div>
 
+      <SearchInput value={search} onChange={setSearch} placeholder="Search by name or hostname…" className="max-w-sm" />
+
       {isLoading && <PageSkeleton />}
       {isError && <PageError error={error} onRetry={refetch} />}
       {!isLoading && !isError && endpoints && endpoints.length === 0 && (
-        <EmptyState message="No endpoints registered yet. Register one to start scanning." />
+        <EmptyState message={q ? `No endpoints match "${q}".` : 'No endpoints registered yet. Register one to start scanning.'} />
       )}
 
       {!isLoading && !isError && endpoints && endpoints.length > 0 && (
@@ -104,10 +126,10 @@ export function EndpointsPage() {
             <TableBody>
               {endpoints.map((endpoint) => (
                 <TableRow key={endpoint.id}>
-                  <TableCell className="font-medium text-slate-900 dark:text-slate-100">{endpoint.name}</TableCell>
-                  <TableCell className="text-slate-500">{endpoint.hostname}</TableCell>
-                  <TableCell className="capitalize">
-                    {endpoint.os} {endpoint.os_version}
+                  <TableCell className="font-medium text-foreground">{endpoint.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{endpoint.hostname}</TableCell>
+                  <TableCell>
+                    {osLabel(endpoint.os)} {endpoint.os_version}
                   </TableCell>
                   <TableCell>{endpoint.agent_version ?? '—'}</TableCell>
                   <TableCell>
@@ -115,8 +137,8 @@ export function EndpointsPage() {
                       {endpoint.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-500">{formatDateTime(endpoint.last_seen_at)}</TableCell>
-                  <TableCell className="text-slate-500">{formatDateTime(endpoint.last_scan)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateTime(endpoint.last_seen_at)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateTime(endpoint.last_scan)}</TableCell>
                   <TableCell>
                     <RiskScoreBadge riskScore={endpoint.risk_score} />
                   </TableCell>
@@ -128,6 +150,9 @@ export function EndpointsPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+      {!isLoading && !isError && data && endpoints && endpoints.length > 0 && (
+        <Pagination total={data.total} limit={PAGE_SIZE} offset={offset} onOffsetChange={setOffset} />
       )}
 
       <EnrollmentTokensSection />

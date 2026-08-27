@@ -50,5 +50,5 @@ def test_analyst_can_create_exclusion_rule(client, analyst_auth_headers):
 
 def test_exclusion_rule_creation_is_audit_logged(client, auth_headers):
     client.post("/api/v1/exclusion-rules", headers=auth_headers, json={"category": "email", "reason": "x"})
-    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()
+    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()["items"]
     assert any(entry["action"] == "exclusion_rule.created" for entry in logs)

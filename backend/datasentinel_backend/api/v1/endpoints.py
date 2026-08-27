@@ -14,9 +14,9 @@ import uuid
 from datetime import datetime, timezone
 
 import openpyxl
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from datasentinel_backend.api.v1.schemas import (
@@ -27,6 +27,7 @@ from datasentinel_backend.api.v1.schemas import (
     EndpointRegisterResponse,
     EndpointResponse,
     EndpointUpdateRequest,
+    PaginatedEndpoints,
 )
 from datasentinel_backend.core.database import get_db
 from datasentinel_backend.models.models import EnrollmentToken, Endpoint, Policy, User
@@ -229,11 +230,21 @@ def bulk_import_endpoints(
     return BulkImportResponse(created=created_count, failed=len(results) - created_count, rows=results)
 
 
-@router.get("", response_model=list[EndpointResponse])
-def list_endpoints(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> list[EndpointResponse]:
-    stmt = select(Endpoint).where(Endpoint.org_id == user.org_id).order_by(Endpoint.registered_at.desc())
+@router.get("", response_model=PaginatedEndpoints)
+def list_endpoints(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    q: str | None = Query(None, description="Case-insensitive substring search on name or hostname"),
+    limit: int = 50,
+    offset: int = 0,
+) -> PaginatedEndpoints:
+    stmt = select(Endpoint).where(Endpoint.org_id == user.org_id)
+    if q:
+        stmt = stmt.where(or_(Endpoint.name.ilike(f"%{q}%"), Endpoint.hostname.ilike(f"%{q}%")))
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = stmt.order_by(Endpoint.registered_at.desc()).limit(min(limit, 500)).offset(max(offset, 0))
     endpoints = list(db.execute(stmt).scalars())
-    return [_to_response(db, endpoint) for endpoint in endpoints]
+    return PaginatedEndpoints(total=total, items=[_to_response(db, endpoint) for endpoint in endpoints])
 
 
 @router.get("/{endpoint_id}", response_model=EndpointResponse)

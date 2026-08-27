@@ -1,89 +1,109 @@
+import * as React from 'react'
+
 import { useCancelScan, useScans } from '@/api/scans'
-import { useEndpoints } from '@/api/endpoints'
+import { useAllEndpoints } from '@/api/endpoints'
 import { EmptyState, PageError, PageSkeleton } from '@/components/page-states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/pagination'
+import { SearchInput } from '@/components/ui/search-input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import type { ScanStatus } from '@/types/api'
 
+const PAGE_SIZE = 25
+
 const STATUS_VARIANT: Record<ScanStatus, string> = {
-  completed: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-  running: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
-  pending: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  cancelled: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500',
-  failed: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400',
-  timed_out: 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400',
+  completed: 'bg-success-bg text-success-fg',
+  running: 'bg-accent text-accent-foreground',
+  pending: 'bg-secondary text-secondary-foreground',
+  cancelled: 'bg-muted text-muted-foreground',
+  failed: 'bg-destructive/10 text-destructive',
+  timed_out: 'bg-severity-high-bg text-severity-high-fg',
 }
 
 export function ScansPage() {
-  const { data: scans, isLoading, isError, error, refetch } = useScans()
-  const { data: endpoints } = useEndpoints()
+  const [search, setSearch] = React.useState('')
+  const [offset, setOffset] = React.useState(0)
+  const q = useDebouncedValue(search)
+
+  React.useEffect(() => setOffset(0), [q])
+
+  const { data, isLoading, isError, error, refetch } = useScans({ q: q || undefined, limit: PAGE_SIZE, offset })
+  const { data: endpointsData } = useAllEndpoints()
+  const endpoints = endpointsData?.items
   const cancelScan = useCancelScan()
 
   const endpointName = (endpointId: string) => endpoints?.find((e) => e.id === endpointId)?.name ?? endpointId.slice(0, 8)
+  const scans = data?.items
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Scans</h1>
-        <p className="text-sm text-slate-500">Every scan reported by an endpoint agent.</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Scans</h1>
+        <p className="text-sm text-muted-foreground">Every scan reported by an endpoint agent.</p>
       </div>
+
+      <SearchInput value={search} onChange={setSearch} placeholder="Search by endpoint name or hostname…" className="max-w-sm" />
 
       {isLoading && <PageSkeleton />}
       {isError && <PageError error={error} onRetry={refetch} />}
-      {!isLoading && !isError && scans && scans.length === 0 && <EmptyState message="No scans reported yet." />}
+      {!isLoading && !isError && scans && scans.length === 0 && (
+        <EmptyState message={q ? `No scans match "${q}".` : 'No scans reported yet.'} />
+      )}
 
       {!isLoading && !isError && scans && scans.length > 0 && (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Endpoint</TableHead>
-                <TableHead>Profile</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Files scanned</TableHead>
-                <TableHead>PII</TableHead>
-                <TableHead>Secrets</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {scans.map((scan) => (
-                <TableRow key={scan.id}>
-                  <TableCell className="font-medium text-slate-900 dark:text-slate-100">
-                    {endpointName(scan.endpoint_id)}
-                  </TableCell>
-                  <TableCell className="capitalize text-slate-500">{scan.profile}</TableCell>
-                  <TableCell>
-                    <Badge className={`capitalize ${STATUS_VARIANT[scan.status]}`}>{scan.status.replace('_', ' ')}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {scan.files_scanned.toLocaleString()} / {scan.files_discovered.toLocaleString()}
-                  </TableCell>
-                  <TableCell>{scan.pii_findings.toLocaleString()}</TableCell>
-                  <TableCell>{scan.secret_findings.toLocaleString()}</TableCell>
-                  <TableCell className="text-slate-500">
-                    {scan.started_at ? new Date(scan.started_at).toLocaleString() : '—'}
-                  </TableCell>
-                  <TableCell>
-                    {scan.status === 'running' || scan.status === 'pending' ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={cancelScan.isPending}
-                        onClick={() => cancelScan.mutate(scan.id)}
-                      >
-                        Cancel
-                      </Button>
-                    ) : null}
-                  </TableCell>
+        <>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Endpoint</TableHead>
+                  <TableHead>Profile</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Files scanned</TableHead>
+                  <TableHead>PII</TableHead>
+                  <TableHead>Secrets</TableHead>
+                  <TableHead>Started</TableHead>
+                  <TableHead />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {scans.map((scan) => (
+                  <TableRow key={scan.id}>
+                    <TableCell className="font-medium text-foreground">{endpointName(scan.endpoint_id)}</TableCell>
+                    <TableCell className="capitalize text-muted-foreground">{scan.profile}</TableCell>
+                    <TableCell>
+                      <Badge className={`capitalize ${STATUS_VARIANT[scan.status]}`}>{scan.status.replace('_', ' ')}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {scan.files_scanned.toLocaleString()} / {scan.files_discovered.toLocaleString()}
+                    </TableCell>
+                    <TableCell>{scan.pii_findings.toLocaleString()}</TableCell>
+                    <TableCell>{scan.secret_findings.toLocaleString()}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {scan.started_at ? new Date(scan.started_at).toLocaleString() : '—'}
+                    </TableCell>
+                    <TableCell>
+                      {scan.status === 'running' || scan.status === 'pending' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={cancelScan.isPending}
+                          onClick={() => cancelScan.mutate(scan.id)}
+                        >
+                          Cancel
+                        </Button>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+          <Pagination total={data.total} limit={PAGE_SIZE} offset={offset} onOffsetChange={setOffset} />
+        </>
       )}
     </div>
   )

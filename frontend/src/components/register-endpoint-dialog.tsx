@@ -48,12 +48,12 @@ export function RegisterEndpointDialog() {
             <DialogHeader>
               <DialogTitle>Endpoint registered</DialogTitle>
             </DialogHeader>
-            <p className="mb-2 text-sm text-slate-500">
-              Copy this API token into the agent's <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">.env</code> as{' '}
-              <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">DATASENTINEL_ENDPOINT_TOKEN</code>. It will not be
+            <p className="mb-2 text-sm text-muted-foreground">
+              Copy this API token into the agent's <code className="rounded bg-muted px-1">.env</code> as{' '}
+              <code className="rounded bg-muted px-1">DATASENTINEL_ENDPOINT_TOKEN</code>. It will not be
               shown again.
             </p>
-            <code className="block break-all rounded-md bg-slate-100 p-3 text-xs dark:bg-slate-800">{issuedToken}</code>
+            <code className="block break-all rounded-md bg-muted p-3 text-xs">{issuedToken}</code>
             <Button className="mt-4 w-full" variant="outline" onClick={() => handleOpenChange(false)}>
               Done
             </Button>
@@ -85,7 +85,7 @@ export function RegisterEndpointDialog() {
                   </SelectContent>
                 </Select>
               </div>
-              {register.isError && <p className="text-sm text-red-600">Registration failed. Try a different hostname.</p>}
+              {register.isError && <p className="text-sm text-destructive">Registration failed. Try a different hostname.</p>}
               <Button type="submit" className="w-full" disabled={register.isPending}>
                 {register.isPending ? 'Registering…' : 'Register'}
               </Button>

@@ -77,7 +77,7 @@ def test_enroll_with_a_valid_token_creates_an_endpoint_and_issues_a_credential(c
     assert body["api_token"].startswith("dsat_")  # a normal endpoint token, not the enrollment token
 
     # The endpoint actually appears in the org's endpoint list.
-    listed = client.get("/api/v1/endpoints", headers=auth_headers).json()
+    listed = client.get("/api/v1/endpoints", headers=auth_headers).json()["items"]
     assert any(e["hostname"] == "EMP-LAPTOP-01" for e in listed)
 
     # And current_uses incremented.
@@ -192,7 +192,7 @@ def test_enrollment_tokens_are_scoped_to_organization(client, db_session_factory
     enroll = _enroll(client, raw_token, hostname="CROSS-ORG-TEST")
     assert enroll.status_code == 201
 
-    org_b_endpoints = client.get("/api/v1/endpoints", headers=headers2).json()
+    org_b_endpoints = client.get("/api/v1/endpoints", headers=headers2).json()["items"]
     assert not any(e["hostname"] == "CROSS-ORG-TEST" for e in org_b_endpoints)
 
 
@@ -259,7 +259,7 @@ def test_enrollment_token_actions_are_audit_logged(client, auth_headers):
     _enroll(client, raw_token, hostname="EMP-LAPTOP-08")
     client.post(f"/api/v1/enrollment-tokens/{token_id}/revoke", headers=auth_headers)
 
-    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()
+    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()["items"]
     actions = {entry["action"] for entry in logs}
     assert "enrollment_token.created" in actions
     assert "endpoint.enrolled" in actions

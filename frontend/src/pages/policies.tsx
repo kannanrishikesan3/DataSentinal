@@ -36,13 +36,13 @@ export function PoliciesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Policies</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-xl font-semibold text-foreground">Policies</h1>
+        <p className="text-sm text-muted-foreground">
           Named risk-engine overrides (scan thresholds, exclusion rules) pushed to agents. Agents fall back to their
           local defaults when none apply.
         </p>
         {!isAdmin && (
-          <p className="mt-1 text-xs text-slate-400">Only admins can create, edit, or delete policies.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Only admins can create, edit, or delete policies.</p>
         )}
       </div>
 
@@ -67,11 +67,11 @@ export function PoliciesPage() {
                 <TableBody>
                   {policies.map((policy) => (
                     <TableRow key={policy.id}>
-                      <TableCell className="font-medium text-slate-900 dark:text-slate-100">{policy.name}</TableCell>
-                      <TableCell className="max-w-xs truncate font-mono text-xs text-slate-500">
+                      <TableCell className="font-medium text-foreground">{policy.name}</TableCell>
+                      <TableCell className="max-w-xs truncate font-mono text-xs text-muted-foreground">
                         {JSON.stringify(policy.config)}
                       </TableCell>
-                      <TableCell className="text-slate-500">{new Date(policy.updated_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(policy.updated_at).toLocaleDateString()}</TableCell>
                       {isAdmin && (
                         <TableCell className="text-right">
                           <Button
@@ -95,7 +95,7 @@ export function PoliciesPage() {
         {isAdmin && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-slate-700 dark:text-slate-300">New policy</CardTitle>
+            <CardTitle className="text-foreground">New policy</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-3" onSubmit={handleSubmit}>
@@ -107,13 +107,13 @@ export function PoliciesPage() {
                 <Label htmlFor="policy-config">Config (JSON)</Label>
                 <textarea
                   id="policy-config"
-                  className="h-32 w-full rounded-md border border-slate-300 bg-white p-2 font-mono text-xs text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="h-32 w-full rounded-md border border-input bg-background p-2 font-mono text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={configText}
                   onChange={(e) => setConfigText(e.target.value)}
                 />
               </div>
-              {jsonError && <p className="text-xs text-red-600">{jsonError}</p>}
-              {createPolicy.isError && <p className="text-xs text-red-600">Failed to save — name may already exist.</p>}
+              {jsonError && <p className="text-xs text-destructive">{jsonError}</p>}
+              {createPolicy.isError && <p className="text-xs text-destructive">Failed to save — name may already exist.</p>}
               <Button type="submit" className="w-full" disabled={createPolicy.isPending}>
                 {createPolicy.isPending ? 'Saving…' : 'Create policy'}
               </Button>

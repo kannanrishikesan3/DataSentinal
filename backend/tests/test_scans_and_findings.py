@@ -69,7 +69,7 @@ def test_resubmitting_the_same_agent_scan_id_does_not_duplicate(client, endpoint
     assert second.status_code == 201
     assert first.json()["id"] == second.json()["id"]
 
-    all_scans = client.get("/api/v1/scans", headers=auth_headers).json()
+    all_scans = client.get("/api/v1/scans", headers=auth_headers).json()["items"]
     assert len(all_scans) == 1
 
     all_findings = client.get("/api/v1/findings", headers=auth_headers).json()
@@ -85,7 +85,7 @@ def test_different_agent_scan_ids_create_separate_scans(client, endpoint_token, 
     client.post("/api/v1/scans", json=payload_a, headers={"Authorization": f"Bearer {endpoint_token}"})
     client.post("/api/v1/scans", json=payload_b, headers={"Authorization": f"Bearer {endpoint_token}"})
 
-    all_scans = client.get("/api/v1/scans", headers=auth_headers).json()
+    all_scans = client.get("/api/v1/scans", headers=auth_headers).json()["items"]
     assert len(all_scans) == 2
 
 
@@ -102,7 +102,7 @@ def test_list_scans_for_org(client, endpoint_token, auth_headers):
     client.post("/api/v1/scans", json=_sample_scan_payload(), headers={"Authorization": f"Bearer {endpoint_token}"})
     response = client.get("/api/v1/scans", headers=auth_headers)
     assert response.status_code == 200
-    assert len(response.json()) == 1
+    assert response.json()["total"] == 1
 
 
 def test_cancel_scan(client, endpoint_token, auth_headers):
@@ -165,7 +165,7 @@ def test_finding_status_change_is_audit_logged(client, endpoint_token, auth_head
     finding_id = client.get("/api/v1/findings", headers=auth_headers).json()["items"][0]["id"]
     client.patch(f"/api/v1/findings/{finding_id}", json={"status": "suppressed"}, headers=auth_headers)
 
-    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()
+    logs = client.get("/api/v1/audit-logs", headers=auth_headers).json()["items"]
     assert any(entry["action"] == "finding.status_changed" for entry in logs)
 
 
@@ -272,3 +272,28 @@ def test_findings_are_scoped_to_organization(client, db_session_factory):
 
     findings = client.get("/api/v1/findings", headers=headers2).json()
     assert findings["total"] == 0
+
+
+def test_findings_search_by_file_path(client, endpoint_token, auth_headers):
+    client.post("/api/v1/scans", json=_sample_scan_payload(), headers={"Authorization": f"Bearer {endpoint_token}"})
+
+    matched = client.get("/api/v1/findings?q=employees", headers=auth_headers).json()
+    assert matched["total"] == 1
+    assert matched["items"][0]["category"] == "email"
+
+    no_match = client.get("/api/v1/findings?q=nonexistent-file", headers=auth_headers).json()
+    assert no_match["total"] == 0
+
+
+def test_scans_pagination_offset_and_limit(client, endpoint_token, auth_headers):
+    for i in range(3):
+        payload = _sample_scan_payload()
+        payload["agent_scan_id"] = f"scan-{i}"
+        client.post("/api/v1/scans", json=payload, headers={"Authorization": f"Bearer {endpoint_token}"})
+
+    page1 = client.get("/api/v1/scans?limit=2&offset=0", headers=auth_headers).json()
+    assert page1["total"] == 3
+    assert len(page1["items"]) == 2
+
+    page2 = client.get("/api/v1/scans?limit=2&offset=2", headers=auth_headers).json()
+    assert len(page2["items"]) == 1

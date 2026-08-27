@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
+import { Logo } from '@/components/logo'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -29,12 +30,14 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   return (
-    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-4 dark:border-slate-800">
-        <Shield className="h-5 w-5 text-slate-900 dark:text-slate-100" />
-        <div>
-          <p className="text-sm font-semibold leading-none text-slate-900 dark:text-slate-100">DataSentinel</p>
-          <p className="text-[11px] leading-none text-slate-400">Discover. Classify. Protect.</p>
+    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+      <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 py-4">
+        <Logo className="h-6 w-6 shrink-0 text-sidebar-accent-foreground" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-none text-sidebar-foreground">DataSentinel</p>
+          <p className="mt-1 truncate text-[11px] leading-none text-sidebar-muted-foreground">
+            Discover. Classify. Protect.
+          </p>
         </div>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
@@ -47,12 +50,12 @@ export function Sidebar() {
               cn(
                 'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground',
               )
             }
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4 w-4 shrink-0" />
             {label}
           </NavLink>
         ))}
